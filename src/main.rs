@@ -24,7 +24,8 @@ use tokio::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const MCP_SERVER_URL: &str = "https://mcp.montrose.io";
-const MCP_REDIRECT_URI: &str = "http://127.0.0.1:8080/callback";
+// The MCP server does not like an IP as the host in the callback server (HTTP/2 403)
+const MCP_REDIRECT_URI: &str = "http://localhost:8080/callback";
 const CALLBACK_PORT: u16 = 8080;
 const CALLBACK_HTML: &str = include_str!("callback.html");
 
