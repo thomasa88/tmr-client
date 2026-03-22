@@ -1,68 +1,44 @@
 use std::path::{Path, PathBuf};
 
+use async_trait::async_trait;
 use etcetera::AppStrategy;
 use rmcp::transport::{AuthError, StoredCredentials, auth::OAuthTokenResponse};
 use serde::{Deserialize, Serialize};
 
 pub struct CredStore {
-    dirs: etcetera::app_strategy::Xdg,
+    filename: PathBuf,
 }
 
 impl CredStore {
     pub fn new(dirs: &etcetera::app_strategy::Xdg) -> Self {
-        Self { dirs: dirs.clone() }
+        let filename = dirs.config_dir().join("credentials.json");
+        std::fs::create_dir_all(filename.parent().unwrap()).unwrap();
+        Self { filename }
     }
 }
 
-// impl rmcp::transport::CredentialStore for CredStore {
-//     fn load<'life0, 'async_trait>(
-//         &'life0 self,
-//     ) -> ::core::pin::Pin<
-//         Box<
-//             dyn ::core::future::Future<Output = Result<Option<StoredCredentials>, AuthError>>
-//                 + ::core::marker::Send
-//                 + 'async_trait,
-//         >,
-//     >
-//     where
-//         'life0: 'async_trait,
-//         Self: 'async_trait,
-//     {
-//         todo!()
-//     }
+#[async_trait]
+impl rmcp::transport::CredentialStore for CredStore {
+    async fn load(&self) -> Result<Option<StoredCredentials>, AuthError> {
+        if !self.filename.exists() {
+            return Ok(None);
+        }
+        let file = std::fs::File::open(&self.filename).unwrap();
+        let creds: StoredCredentials = serde_json::from_reader(file).unwrap();
+        Ok(Some(creds))
+    }
 
-//     fn save<'life0, 'async_trait>(
-//         &'life0 self,
-//         credentials: StoredCredentials,
-//     ) -> ::core::pin::Pin<
-//         Box<
-//             dyn ::core::future::Future<Output = Result<(), AuthError>>
-//                 + ::core::marker::Send
-//                 + 'async_trait,
-//         >,
-//     >
-//     where
-//         'life0: 'async_trait,
-//         Self: 'async_trait,
-//     {
-//     }
+    async fn save(&self, credentials: StoredCredentials) -> Result<(), AuthError> {
+        let file = std::fs::File::create(&self.filename).unwrap();
+        serde_json::to_writer_pretty(file, &credentials).unwrap();
+        Ok(())
+    }
 
-//     fn clear<'life0, 'async_trait>(
-//         &'life0 self,
-//     ) -> ::core::pin::Pin<
-//         Box<
-//             dyn ::core::future::Future<Output = Result<(), AuthError>>
-//                 + ::core::marker::Send
-//                 + 'async_trait,
-//         >,
-//     >
-//     where
-//         'life0: 'async_trait,
-//         Self: 'async_trait,
-//     {
-//         todo!()
-//     }
-// }
+    async fn clear(&self) -> Result<(), AuthError> {
+        std::fs::remove_file(&self.filename).ok();
+        Ok(())
+    }
+}
 
 pub struct OauthStore {
     filename: PathBuf,
