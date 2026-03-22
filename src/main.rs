@@ -1,6 +1,6 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use axum::{
     Router,
     extract::{Query, State},
@@ -11,7 +11,7 @@ use rmcp::{
     ServiceExt,
     model::ClientInfo,
     transport::{
-        AuthorizationManager, StreamableHttpClientTransport,
+        AuthorizationManager, CredentialStore, StoredCredentials, StreamableHttpClientTransport,
         auth::{AuthClient, OAuthState},
         streamable_http_client::StreamableHttpClientTransportConfig,
     },
@@ -129,70 +129,113 @@ async fn main() -> Result<()> {
 
     let mut output = BufWriter::new(tokio::io::stdout());
 
-    let oauth_store = OauthStore::new(&dirs);
-    if let Some((client_id, token_response)) = oauth_store.load() {
-        tracing::info!("Loaded credentials from store for client_id: {}", client_id);
-        oauth_state.set_credentials(&client_id, token_response).await?;
-    } else {
-        tracing::info!("No credentials found in store, starting new authorization flow");
-        // passing empty scopes lets the SDK auto-select from the server's
-        // WWW-Authenticate header, Protected Resource Metadata, or AS metadata.
-        oauth_state
-            .start_authorization(&["mcp"], MCP_REDIRECT_URI, Some("TMR Client"))
-            .await
-            .context("Failed to start authorization")?;
+    // let oauth_store = OauthStore::new(&dirs);
+    // if let Some((client_id, token_response)) = oauth_store.load() {
+    //     tracing::info!("Loaded credentials from store for client_id: {}", client_id);
+    //     oauth_state
+    //         .set_credentials(&client_id, token_response)
+    //         .await?;
+    // } else {
+    // }
 
-        // Output authorization URL to user
-        output.write_all(b"\n=== MCP OAuth Client ===\n\n").await?;
-        output
-            .write_all(b"Please open the following URL in your browser to authorize:\n\n")
-            .await?;
-        output
-            .write_all(oauth_state.get_authorization_url().await?.as_bytes())
-            .await?;
-        output
-            .write_all(b"\n\nWaiting for browser callback, please do not close this window...\n")
-            .await?;
-        output.flush().await?;
-
-        // Wait for authorization code
-        tracing::info!("Waiting for authorization code...");
-        let CallbackParams {
-            code: auth_code,
-            state: csrf_token,
-        } = code_receiver
-            .await
-            .context("Failed to get authorization code")?;
-        tracing::info!("Received authorization code: {}", auth_code);
-        // Exchange code for access token
-        tracing::info!("Exchanging authorization code for access token...");
-        oauth_state
-            .handle_callback(&auth_code, &csrf_token)
-            .await
-            .context("Failed to handle callback")?;
-        tracing::info!("Successfully obtained access token");
-
-        output
-            .write_all(b"\nAuthorization successful! Access token obtained.\n\n")
-            .await?;
-        output.flush().await?;
-
-        let creds = oauth_state
-            .get_credentials()
-            .await
-            .context("Failed to get credentials from oauth state")?;
-        if let (client_id, Some(token_response)) = creds {
-            oauth_store.save(&client_id, &token_response);
-        } else {
-            tracing::warn!("No credentials obtained from oauth state");
-        }
-    }
+    // let cred_store = CredStore::new(&dirs);
 
     // Create authorized transport, this transport is authorized by the oauth state machine
     tracing::info!("Establishing authorized connection to MCP server...");
-    let am = oauth_state
-        .into_authorization_manager()
-        .ok_or_else(|| anyhow::anyhow!("Failed to get authorization manager"))?;
+    let am = {
+        let mut am = AuthorizationManager::new(&server_url).await?;
+        am.set_credential_store(CredStore::new(&dirs));
+        if am.initialize_from_store().await? {
+            tracing::info!("Initialized authorization manager from credential store");
+            am
+        } else {
+            tracing::info!("No credentials found in store, starting new authorization flow");
+            // passing empty scopes lets the SDK auto-select from the server's
+            // WWW-Authenticate header, Protected Resource Metadata, or AS metadata.
+            let wanted_scopes = &["mcp"];
+            oauth_state
+                .start_authorization(wanted_scopes, MCP_REDIRECT_URI, Some("TMR Client"))
+                .await
+                .context("Failed to start authorization")?;
+
+            // Output authorization URL to user
+            output.write_all(b"\n=== MCP OAuth Client ===\n\n").await?;
+            output
+                .write_all(b"Please open the following URL in your browser to authorize:\n\n")
+                .await?;
+            output
+                .write_all(oauth_state.get_authorization_url().await?.as_bytes())
+                .await?;
+            output
+                .write_all(
+                    b"\n\nWaiting for browser callback, please do not close this window...\n",
+                )
+                .await?;
+            output.flush().await?;
+
+            // Wait for authorization code
+            tracing::info!("Waiting for authorization code...");
+            let CallbackParams {
+                code: auth_code,
+                state: csrf_token,
+            } = code_receiver
+                .await
+                .context("Failed to get authorization code")?;
+            tracing::info!("Received authorization code: {}", auth_code);
+            // Exchange code for access token
+            tracing::info!("Exchanging authorization code for access token...");
+            oauth_state
+                .handle_callback(&auth_code, &csrf_token)
+                .await
+                .context("Failed to handle callback")?;
+            tracing::info!("Successfully obtained access token");
+
+            output
+                .write_all(b"\nAuthorization successful! Access token obtained.\n\n")
+                .await?;
+            output.flush().await?;
+
+            let creds = oauth_state
+                .get_credentials()
+                .await
+                .context("Failed to get credentials from oauth state")?;
+            if let (client_id, Some(token_response)) = creds {
+                // oauth_store.save(&client_id, &token_response);
+            } else {
+                tracing::warn!("No credentials obtained from oauth state");
+            }
+
+            // am.configure_client_credentials(config)
+            // oauth_state.into_authorization_manager()
+            // am
+            // oauth_state.to_authorized_http_client().await?
+
+            let (client_id, Some(token_response)) = oauth_state.get_credentials().await? else {
+                bail!("Failed to extract credentials from OAuth");
+            };
+            // TODO: Get the actual granted scopes
+            // let granted_scopes: Vec<String> = token_response.scopes().map(|scopes| scopes.iter().map(|scope| scope.to_string()).collect());
+            let granted_scopes: Vec<String> = wanted_scopes.iter().map(|s| s.to_string()).collect();
+            let received_at = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            let cred_store = CredStore::new(&dirs);
+            cred_store.save(StoredCredentials {
+                client_id: client_id,
+                token_response: Some(token_response),
+                granted_scopes,
+                token_received_at: Some(received_at),
+            }).await?;
+
+            oauth_state
+                .into_authorization_manager()
+                .ok_or_else(|| anyhow::anyhow!("Failed to get authorization manager"))?;
+
+            am.set_credential_store(cred_store);
+            am
+        }
+    };
 
     let client = AuthClient::new(reqwest::Client::default(), am);
     let transport = StreamableHttpClientTransport::with_client(
