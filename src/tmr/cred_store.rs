@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use tracing::debug;
 
 use async_trait::async_trait;
 use etcetera::AppStrategy;
@@ -25,17 +26,20 @@ impl rmcp::transport::CredentialStore for CredStore {
         }
         let file = std::fs::File::open(&self.filename).unwrap();
         let creds: StoredCredentials = serde_json::from_reader(file).unwrap();
+        debug!("Loaded credentials from {:?}", self.filename);
         Ok(Some(creds))
     }
 
     async fn save(&self, credentials: StoredCredentials) -> Result<(), AuthError> {
         let file = std::fs::File::create(&self.filename).unwrap();
         serde_json::to_writer_pretty(file, &credentials).unwrap();
+        debug!("Saved credentials to {:?}", self.filename);
         Ok(())
     }
 
     async fn clear(&self) -> Result<(), AuthError> {
         std::fs::remove_file(&self.filename).ok();
+        debug!("Cleared credentials at {:?}", self.filename);
         Ok(())
     }
 }
