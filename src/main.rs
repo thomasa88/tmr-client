@@ -1,3 +1,6 @@
+// Copyright 2026 Thomas Axelsson
+// SPDX-License-Identifier: MIT
+
 use anyhow::Context;
 use rust_decimal::Decimal;
 use tracing::{error, info};

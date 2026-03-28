@@ -1,3 +1,6 @@
+// Copyright 2026 Thomas Axelsson
+// SPDX-License-Identifier: MIT
+
 use reqwest::Url;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};

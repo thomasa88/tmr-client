@@ -1,3 +1,6 @@
+// Copyright 2026 Thomas Axelsson
+// SPDX-License-Identifier: MIT
+
 use std::{net::SocketAddr, sync::Arc};
 
 use async_trait::async_trait;

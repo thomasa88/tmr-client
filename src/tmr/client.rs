@@ -1,3 +1,6 @@
+// Copyright 2026 Thomas Axelsson
+// SPDX-License-Identifier: MIT
+
 use std::marker::PhantomData;
 
 use oauth2::TokenResponse;

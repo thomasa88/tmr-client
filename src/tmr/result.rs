@@ -1,3 +1,6 @@
+// Copyright 2026 Thomas Axelsson
+// SPDX-License-Identifier: MIT
+
 #[derive(Debug, thiserror::Error)]
 pub enum TmrCallError {
     #[error("MCP service communication error")]
