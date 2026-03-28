@@ -20,7 +20,7 @@ use serde::de::DeserializeOwned;
 use tracing::{debug, info, trace};
 use uuid::Uuid;
 
-use crate::tmr::{
+use crate::{
     TmrCallError,
     cred_store::CredStore,
     oauth_handler::{self, AuthCallbackHandler, DefaultAuthCallbackHandler},
@@ -244,12 +244,12 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
                     .as_secs();
                 let cred_store = CredStore::new(&self.lib_dirs);
                 cred_store
-                    .save(StoredCredentials {
+                    .save(StoredCredentials::new(
                         client_id,
-                        token_response: Some(token_response),
+                        Some(token_response),
                         granted_scopes,
-                        token_received_at: Some(received_at),
-                    })
+                        Some(received_at),
+                    ))
                     .await
                     .map_err(|e| TmrConnectError::AuthError {
                         msg: "Failed to save credentials".to_string(),
@@ -427,9 +427,7 @@ fn parse_result<T: DeserializeOwned>(res: &CallToolResult) -> Result<T, TmrCallE
         .ok_or(TmrCallError::parse_err("No raw text in response"))?
         .text;
     if res.is_error.unwrap_or(false) {
-        return Err(TmrCallError::McpError(format!(
-            "Error from server: {text}"
-        )));
+        return Err(TmrCallError::McpError(format!("Error from server: {text}")));
     }
     Ok(
         serde_json::from_str::<T>(text).map_err(|e| TmrCallError::ParseError {

@@ -17,7 +17,7 @@ use tokio::{
 };
 use tracing::{debug, error, info};
 
-use crate::tmr::result::TmrConnectError;
+use crate::result::TmrConnectError;
 
 const CALLBACK_HTML: &str = include_str!("res/default_callback.html");
 

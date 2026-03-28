@@ -1,0 +1,23 @@
+[package]
+name = "tmr-client"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+axum = { workspace = true }
+etcetera = { workspace = true }
+oauth2 = { workspace = true }
+reqwest = { workspace = true }
+rmcp = { workspace = true }
+rust_decimal = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_with = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+webbrowser = { workspace = true }
