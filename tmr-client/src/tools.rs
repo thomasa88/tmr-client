@@ -65,43 +65,52 @@ pub struct AccountInfo {
     pub account_name: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeTicketArgs {
     /// The side of the order: Buy or Sell.
-    pub side: Side,
+    pub side: TradeSide,
 
     /// Optional account ID. Use GetUserAccounts to find valid account IDs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub account_id: Option<Uuid>,
 
-    /// Optional SEK amount to trade. Exactly one of quantity or amount must be provided.
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "amount")]
-    pub amount_sek: Option<Decimal>,
-
     /// Optional price for the order.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub price: Option<Decimal>,
 
-    /// Optional number of shares to trade. Exactly one of quantity or amount must be provided.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub quantity: Option<Decimal>,
+    /// How much of the instrument to trade
+    #[serde(flatten)]
+    pub size: TradeSize,
 
-    /// Optional instrument name (string) to search for the instrument.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    /// The instrument to trade
+    #[serde(flatten)]
+    pub instrument: TradeInstrument,
+}
 
-    /// Optional orderbookId (int) to identify the instrument directly.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub orderbook_id: Option<i64>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TradeSize {
+    /// SEK amount to trade.
+    #[serde(rename = "amount")]
+    Amount(Decimal),
+    /// Number of shares to trade.
+    Quantity(Decimal),
+}
 
-    /// Optional ticker (string) to identify the instrument by ticker symbol, e.g. "VOLV B".
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ticker: Option<String>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TradeInstrument {
+    /// instrument name (string) to search for the instrument.
+    Name(String),
+    /// orderbookId (int) to identify the instrument directly.
+    OrderbookId(i64),
+    /// ticker (string) to identify the instrument  ticker symbol, e.g. "VOLV B".
+    Ticker(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub enum Side {
+pub enum TradeSide {
     #[default]
     Buy,
     Sell,

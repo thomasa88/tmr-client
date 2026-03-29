@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 use anyhow::Context;
-use tmr_client::Decimal;
+use tmr_client::{Decimal, tools::{TradeInstrument, TradeSide, TradeSize, TradeTicketArgs}};
 use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -28,13 +28,13 @@ async fn main() -> anyhow::Result<()> {
     // dbg!(&accounts);
 
     // client
-    //     .create_trade_ticket(tmr_client::tools::TradeTicketArgs {
-    //         side: tmr_client::tools::Side::Buy,
+    //     .create_trade_ticket(TradeTicketArgs {
+    //         side: TradeSide::Buy,
     //         account_id: Some(accounts.get(0).context("No accounts")?.account_id),
-    //         amount_sek: Some(Decimal::new(1, 0)),
-    //         // ticker: Some("SB GLOB A SEK".to_string()),
-    //         orderbook_id: Some(3361), // LF GLOB
-    //         ..Default::default()
+    //         size: TradeSize::Amount(Decimal::new(1, 0)),
+    //         // instrument: TradeInstrument::Ticker("SB GLOB A SEK".to_string()),
+    //         instrument: TradeInstrument::OrderbookId(3361),
+    //         price: None,
     //     })
     //     .await?;
 
