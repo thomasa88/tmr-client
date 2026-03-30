@@ -87,9 +87,9 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
     ) -> Result<TmrClient<DefaultAuthCallbackHandler, Connected>, TmrConnectError> {
         let am = self.authenticate().await?;
 
-        // info!("refresh");
-        // dbg!(am.get_credentials().await?);
-        // am.refresh_token().await?;
+        info!("refresh");
+        dbg!(am.get_credentials().await.unwrap());
+        am.refresh_token().await.unwrap();
         let client = AuthClient::new(reqwest::Client::default(), am);
         let transport = StreamableHttpClientTransport::with_client(
             client,
