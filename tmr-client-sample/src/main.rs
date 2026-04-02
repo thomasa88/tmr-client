@@ -21,7 +21,8 @@ async fn main() -> anyhow::Result<()> {
     let client = client.connect().await?;
 
     // let accounts = tmr_client.get_user_accounts().await?;
-    let accounts = dbg!(client.get_holdings(None).await?);
+    let accounts = client.get_holdings(None).await?;
+    println!("{} accounts", accounts.len());
 
     // dbg!(tmr_client.get_holdings(None).await?);
     // let accounts = tmr_client.get_user_accounts().await?;

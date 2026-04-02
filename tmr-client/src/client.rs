@@ -17,7 +17,7 @@ use rmcp::{
     },
 };
 use serde::de::DeserializeOwned;
-use tracing::{debug, info, trace};
+use tracing::{debug, error, info, trace};
 use uuid::Uuid;
 
 use crate::{
@@ -87,9 +87,44 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
     ) -> Result<TmrClient<DefaultAuthCallbackHandler, Connected>, TmrConnectError> {
         let am = self.authenticate().await?;
 
-        info!("refresh");
-        dbg!(am.get_credentials().await.unwrap());
-        am.refresh_token().await.unwrap();
+        // dbg!(am.get_credentials().await.unwrap());
+        // dbg!(
+        //     am.get_credentials()
+        //         .await
+        //         .unwrap()
+        //         .1
+        //         .unwrap()
+        //         .access_token()
+        //         .secret()
+        // );
+        // error!("refresh");
+        // am.refresh_token().await.unwrap();
+        
+        // // let creds = am.get_credentials().await.unwrap();
+        // // am.exchange_client_credentials(&rmcp::transport::ClientCredentialsConfig::ClientSecret {
+        // //     client_id: creds.0,
+        // //     client_secret: creds.2.unwrap(),
+        // //     scopes: vec!["mcp".to_string()],
+        // //     resource: Some("https://mcp.montrose.io/".to_string()),
+        // // })
+        // // .await
+        // // .unwrap();
+        // error!("refresh done");
+        // todo!();
+
+        // dbg!(am.get_credentials().await.unwrap());
+        // dbg!(
+        //     am.get_credentials()
+        //         .await
+        //         .unwrap()
+        //         .1
+        //         .unwrap()
+        //         .access_token()
+        //         .secret()
+        // );
+        // drop(am);
+        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // let am = self.authenticate().await?;
         let client = AuthClient::new(reqwest::Client::default(), am);
         let transport = StreamableHttpClientTransport::with_client(
             client,
@@ -103,6 +138,27 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
                 source: Some(e.into()),
             }
         })?;
+
+        // let client = match client {
+        //     Ok(client) => client,
+        //     Err(e) => {
+        //         let am = self.authenticate().await?;
+
+        //         let auth_client = AuthClient::new(reqwest::Client::default(), am);
+        //         let transport = StreamableHttpClientTransport::with_client(
+        //             auth_client,
+        //             StreamableHttpClientTransportConfig::with_uri(MCP_SERVER_URL),
+        //         );
+        //         let client_service = ClientInfo::default();
+        //         client_service.serve(transport).await.map_err(|e| {
+        //             TmrConnectError::ConnectionError {
+        //                 msg: "Failed to connect to MCP server twice".to_string(),
+        //                 source: Some(e.into()),
+        //             }
+        //         })?
+        //     }
+        // };
+
         info!("Successfully connected to MCP server");
 
         Ok(TmrClient {
@@ -115,29 +171,12 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
     async fn authenticate(&self) -> Result<AuthorizationManager, TmrConnectError> {
         info!("Using MCP server URL: {}", MCP_SERVER_URL);
 
-        // let cred_store = CredStore::new(&dirs);
-        // // am.set_credential_store(store);
-        // let mut am = AuthorizationManager::new(&server_url).await?;
-        // am.set_credential_store(cred_store);
-        // am.initialize_from_store().await?;
-
         let mut oauth_state = OAuthState::new(MCP_SERVER_URL, None).await.map_err(|e| {
             TmrConnectError::AuthError {
                 msg: "Failed to initialize OAuth state".to_string(),
                 source: Some(e.into()),
             }
         })?;
-
-        // let oauth_store = OauthStore::new(&dirs);
-        // if let Some((client_id, token_response)) = oauth_store.load() {
-        //     info!("Loaded credentials from store for client_id: {}", client_id);
-        //     oauth_state
-        //         .set_credentials(&client_id, token_response)
-        //         .await?;
-        // } else {
-        // }
-
-        // let cred_store = CredStore::new(&dirs);
 
         info!("Establishing authorized connection to MCP server...");
         let am = {
@@ -205,22 +244,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
 
                 info!("Authorization successful! Access token obtained.");
 
-                // let creds = oauth_state
-                //     .get_credentials()
-                //     .await
-                //     .context("Failed to get credentials from oauth state")?;
-                // if let (client_id, Some(token_response)) = creds {
-                //     // oauth_store.save(&client_id, &token_response);
-                // } else {
-                //     warn!("No credentials obtained from oauth state");
-                // }
-
-                // am.configure_client_credentials(config)
-                // oauth_state.into_authorization_manager()
-                // am
-                // oauth_state.to_authorized_http_client().await?
-
-                let (client_id, Some(token_response)) = oauth_state
+                let (client_id, Some(token_response), Some(client_secret)) = oauth_state
                     .get_credentials()
                     .await
                     .map_err(|e| TmrConnectError::AuthError {
@@ -249,6 +273,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
                         Some(token_response),
                         granted_scopes,
                         Some(received_at),
+                        Some(client_secret),
                     ))
                     .await
                     .map_err(|e| TmrConnectError::AuthError {
