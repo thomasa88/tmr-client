@@ -9,8 +9,8 @@ axum = "0.8.8"
 etcetera = "0.11.0"
 oauth2 = "5.0.0"
 reqwest = "0.13.2"
-# Should be version = "1.3.0", but it provides no way to construct CredentialStorage
-rmcp = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "52c93e9508e2a523ca61f81c55b4cd67c8664ccc", default-features = false, features = [
+# Using custom branch that supports using client secret in OAuth refresh flow
+rmcp = { git = "https://github.com/thomas88/rmcp-rust-sdk.git", rev = "4e228e37a69a5bb94ca857107a0b997d9ad2d461", default-features = false, features = [
     "transport-async-rw",
     "client",
     "reqwest",
