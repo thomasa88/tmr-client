@@ -44,7 +44,6 @@ TOKEN_URL=https://mcp.montrose.io/token
 TOKEN_RESP=$(curl -s -v \
   -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -A "$CLIENT_NAME" \
   -d "grant_type=authorization_code&code=${AUTH_CODE}&redirect_uri=${REDIRECT_URI}&code_verifier=${CODE_VERIFIER}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}" \
   $TOKEN_URL)
 echo $TOKEN_RESP | jq
