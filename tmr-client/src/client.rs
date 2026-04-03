@@ -3,7 +3,6 @@
 
 use std::marker::PhantomData;
 
-use oauth2::TokenResponse;
 use rmcp::{
     RoleClient, ServiceExt,
     model::{
@@ -11,13 +10,12 @@ use rmcp::{
     },
     service::RunningService,
     transport::{
-        AuthClient, AuthorizationManager, CredentialStore, StoredCredentials,
-        StreamableHttpClientTransport, auth::OAuthState,
+        AuthClient, AuthorizationManager, StreamableHttpClientTransport, auth::OAuthState,
         streamable_http_client::StreamableHttpClientTransportConfig,
     },
 };
 use serde::de::DeserializeOwned;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, info};
 use uuid::Uuid;
 
 use crate::{
@@ -87,47 +85,15 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
     ) -> Result<TmrClient<DefaultAuthCallbackHandler, Connected>, TmrConnectError> {
         let am = self.authenticate().await?;
 
-        // dbg!(am.get_credentials().await.unwrap());
-        // dbg!(
-        //     am.get_credentials()
-        //         .await
-        //         .unwrap()
-        //         .1
-        //         .unwrap()
-        //         .access_token()
-        //         .secret()
-        // );
-        // error!("refresh");
+        // OAuth refresh works and can be performed multiple times. However, the
+        // MCP server seems to only accept the initial access token.
+        // info!("Refreshing access token...");
         // am.refresh_token().await.unwrap();
-        
-        // // let creds = am.get_credentials().await.unwrap();
-        // // am.exchange_client_credentials(&rmcp::transport::ClientCredentialsConfig::ClientSecret {
-        // //     client_id: creds.0,
-        // //     client_secret: creds.2.unwrap(),
-        // //     scopes: vec!["mcp".to_string()],
-        // //     resource: Some("https://mcp.montrose.io/".to_string()),
-        // // })
-        // // .await
-        // // .unwrap();
-        // error!("refresh done");
-        // todo!();
+        // info!("Refresh done");
 
-        // dbg!(am.get_credentials().await.unwrap());
-        // dbg!(
-        //     am.get_credentials()
-        //         .await
-        //         .unwrap()
-        //         .1
-        //         .unwrap()
-        //         .access_token()
-        //         .secret()
-        // );
-        // drop(am);
-        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-        // let am = self.authenticate().await?;
-        let client = AuthClient::new(reqwest::Client::default(), am);
+        let auth_client = AuthClient::new(reqwest::Client::default(), am);
         let transport = StreamableHttpClientTransport::with_client(
-            client,
+            auth_client,
             StreamableHttpClientTransportConfig::with_uri(MCP_SERVER_URL),
         );
 
@@ -139,26 +105,6 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
             }
         })?;
 
-        // let client = match client {
-        //     Ok(client) => client,
-        //     Err(e) => {
-        //         let am = self.authenticate().await?;
-
-        //         let auth_client = AuthClient::new(reqwest::Client::default(), am);
-        //         let transport = StreamableHttpClientTransport::with_client(
-        //             auth_client,
-        //             StreamableHttpClientTransportConfig::with_uri(MCP_SERVER_URL),
-        //         );
-        //         let client_service = ClientInfo::default();
-        //         client_service.serve(transport).await.map_err(|e| {
-        //             TmrConnectError::ConnectionError {
-        //                 msg: "Failed to connect to MCP server twice".to_string(),
-        //                 source: Some(e.into()),
-        //             }
-        //         })?
-        //     }
-        // };
-
         info!("Successfully connected to MCP server");
 
         Ok(TmrClient {
@@ -169,7 +115,33 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
     }
 
     async fn authenticate(&self) -> Result<AuthorizationManager, TmrConnectError> {
-        info!("Using MCP server URL: {}", MCP_SERVER_URL);
+        debug!("Using MCP server URL: {}", MCP_SERVER_URL);
+
+        info!("Establishing authorized connection to MCP server...");
+        // Cannot convert an OAuthState into an AuthorizationManager, as it
+        // initially isn't in the Authorized state. So we start with an
+        // AuthorizationManager in case we already have usable credentials.
+        let mut auth_mgr = AuthorizationManager::new(MCP_SERVER_URL)
+            .await
+            .map_err(|e| TmrConnectError::AuthError {
+                msg: "Failed to initialize authorization manager".to_string(),
+                source: Some(e.into()),
+            })?;
+        auth_mgr.set_credential_store(CredStore::new(&self.lib_dirs));
+        let initialized =
+            auth_mgr.initialize_from_store()
+                .await
+                .map_err(|e| TmrConnectError::AuthError {
+                    msg: "Failed to initialize authorization manager from credential store"
+                        .to_string(),
+                    source: Some(e.into()),
+                })?;
+        if initialized {
+            info!("Initialized authorization manager from credential store");
+            return Ok(auth_mgr);
+        }
+
+        info!("No credentials found in store, starting new authorization flow");
 
         let mut oauth_state = OAuthState::new(MCP_SERVER_URL, None).await.map_err(|e| {
             TmrConnectError::AuthError {
@@ -177,130 +149,79 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
                 source: Some(e.into()),
             }
         })?;
+        oauth_state.set_credential_store(CredStore::new(&self.lib_dirs));
 
-        info!("Establishing authorized connection to MCP server...");
-        let am = {
-            let mut am = AuthorizationManager::new(MCP_SERVER_URL)
+        // oauth: Empty scope will let the server select
+        let wanted_scopes = &["mcp"];
+        debug!("Requesting scopes: {:?}", wanted_scopes);
+
+        let auth_serve = CB::new().await?;
+
+        auth_serve.get_listen_addr();
+        let redirect_uri = auth_serve.get_listen_addr();
+        debug!("Using redirect URI: {}", redirect_uri);
+        oauth_state
+            .start_authorization(wanted_scopes, redirect_uri, Some("TMR Client"))
+            .await
+            .map_err(|e| TmrConnectError::AuthError {
+                msg: "Failed to start authorization".to_string(),
+                source: Some(e.into()),
+            })?;
+
+        let auth_url =
+            oauth_state
+                .get_authorization_url()
                 .await
                 .map_err(|e| TmrConnectError::AuthError {
-                    msg: "Failed to initialize authorization manager".to_string(),
+                    msg: "Failed to get authorization URL".to_string(),
                     source: Some(e.into()),
                 })?;
-            am.set_credential_store(CredStore::new(&self.lib_dirs));
-            if am
-                .initialize_from_store()
+        debug!("Auth URL: {}", auth_url);
+
+        info!("Waiting for authorization code...");
+        let oauth_handler::AuthCallback {
+            code: auth_code,
+            state: csrf_token,
+        } = auth_serve.wait_for_callback(&auth_url).await?;
+        info!("Received authorization code: {}", auth_code);
+
+        info!("Exchanging authorization code for access token...");
+        oauth_state
+            .handle_callback(&auth_code, &csrf_token)
+            .await
+            .map_err(|e| TmrConnectError::AuthError {
+                msg: "Failed to handle authorization callback".to_string(),
+                source: Some(e.into()),
+            })?;
+        info!("Successfully obtained access token");
+
+        info!("Authorization successful! Access token obtained.");
+
+        let (client_id, Some(_token_response)) =
+            oauth_state
+                .get_credentials()
                 .await
                 .map_err(|e| TmrConnectError::AuthError {
-                    msg: "Failed to initialize from credential store".to_string(),
+                    msg: "Failed to get credentials from OAuth state".to_string(),
                     source: Some(e.into()),
                 })?
-            {
-                info!("Initialized authorization manager from credential store");
-                am
-            } else {
-                info!("No credentials found in store, starting new authorization flow");
-
-                // oauth: Empty scope will let the server select
-                let wanted_scopes = &["mcp"];
-                debug!("Requesting scopes: {:?}", wanted_scopes);
-
-                let auth_serve = CB::new().await?;
-
-                auth_serve.get_listen_addr();
-                let redirect_uri = auth_serve.get_listen_addr();
-                debug!("Using redirect URI: {}", redirect_uri);
-                oauth_state
-                    .start_authorization(wanted_scopes, redirect_uri, Some("TMR Client"))
-                    .await
-                    .map_err(|e| TmrConnectError::AuthError {
-                        msg: "Failed to start authorization".to_string(),
-                        source: Some(e.into()),
-                    })?;
-
-                let auth_url = oauth_state.get_authorization_url().await.map_err(|e| {
-                    TmrConnectError::AuthError {
-                        msg: "Failed to get authorization URL".to_string(),
-                        source: Some(e.into()),
-                    }
-                })?;
-                debug!("Auth URL: {}", auth_url);
-
-                info!("Waiting for authorization code...");
-                let oauth_handler::AuthCallback {
-                    code: auth_code,
-                    state: csrf_token,
-                } = auth_serve.wait_for_callback(&auth_url).await?;
-                info!("Received authorization code: {}", auth_code);
-
-                info!("Exchanging authorization code for access token...");
-                oauth_state
-                    .handle_callback(&auth_code, &csrf_token)
-                    .await
-                    .map_err(|e| TmrConnectError::AuthError {
-                        msg: "Failed to handle authorization callback".to_string(),
-                        source: Some(e.into()),
-                    })?;
-                info!("Successfully obtained access token");
-
-                info!("Authorization successful! Access token obtained.");
-
-                let (client_id, Some(token_response), Some(client_secret)) = oauth_state
-                    .get_credentials()
-                    .await
-                    .map_err(|e| TmrConnectError::AuthError {
-                        msg: "Failed to get credentials from OAuth state".to_string(),
-                        source: Some(e.into()),
-                    })?
-                else {
-                    return Err(TmrConnectError::AuthError {
-                        msg: "No credentials obtained from OAuth state".to_string(),
-                        source: None,
-                    });
-                };
-                debug!("Obtained client id: {}", client_id);
-                let granted_scopes: Vec<String> = token_response
-                    .scopes()
-                    .map(|scopes| scopes.iter().map(|scope| scope.to_string()).collect())
-                    .unwrap_or_default();
-                let received_at = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs();
-                let cred_store = CredStore::new(&self.lib_dirs);
-                cred_store
-                    .save(StoredCredentials::new(
-                        client_id,
-                        Some(token_response),
-                        granted_scopes,
-                        Some(received_at),
-                        Some(client_secret),
-                    ))
-                    .await
-                    .map_err(|e| TmrConnectError::AuthError {
-                        msg: "Failed to save credentials".to_string(),
-                        source: Some(e.into()),
-                    })?;
-
-                oauth_state.into_authorization_manager().ok_or_else(|| {
-                    TmrConnectError::AuthError {
-                        msg: "Failed to convert OAuth state into authorization manager".to_string(),
-                        source: None,
-                    }
-                })?;
-
-                // set_credential_store() clears the credentials in the manager, so we need to set them again
-                am.set_credential_store(cred_store);
-                am.initialize_from_store()
-                    .await
-                    .map_err(|e| TmrConnectError::AuthError {
-                        msg: "Failed to initialize authorization manager from saved credentials"
-                            .to_string(),
-                        source: Some(e.into()),
-                    })?;
-                am
-            }
+        else {
+            return Err(TmrConnectError::AuthError {
+                msg: "No credentials obtained from OAuth state".to_string(),
+                source: None,
+            });
         };
-        Ok(am)
+        debug!("Obtained client id: {}", client_id);
+
+        let auth_mgr =
+            oauth_state
+                .into_authorization_manager()
+                .ok_or_else(|| TmrConnectError::AuthError {
+                    msg: "Failed to convert OAuth state into authorization manager".to_string(),
+                    source: None,
+                })?;
+
+        Ok(auth_mgr)
     }
 }
 
@@ -376,7 +297,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
     ) -> Result<reqwest::Url, TmrCallError> {
         let json_obj = serde_json::to_value(args)
             .map_err(|e| {
-                TmrCallError::InvalidArguments("Could not convert args to JSON".to_string())
+                TmrCallError::InvalidArguments(format!("Could not convert args to JSON: {e}"))
             })?
             .as_object()
             .ok_or(TmrCallError::InvalidArguments(
