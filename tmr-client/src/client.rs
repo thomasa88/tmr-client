@@ -341,7 +341,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
 
     // client.cancel()?
 
-    async fn call<'a, T: DeserializeOwned>(
+    async fn call<T: DeserializeOwned>(
         &self,
         tool: &str,
         args: Option<JsonObject>,
@@ -362,7 +362,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
 fn parse_result<T: DeserializeOwned>(res: &CallToolResult) -> Result<T, TmrCallError> {
     let text = &res
         .content
-        .get(0)
+        .first()
         .ok_or(TmrCallError::parse_err("No content element in response"))?
         .raw
         .as_text()
@@ -371,10 +371,8 @@ fn parse_result<T: DeserializeOwned>(res: &CallToolResult) -> Result<T, TmrCallE
     if res.is_error.unwrap_or(false) {
         return Err(TmrCallError::McpError(format!("Error from server: {text}")));
     }
-    Ok(
-        serde_json::from_str::<T>(text).map_err(|e| TmrCallError::ParseError {
-            msg: format!("Failed to parse response text: {text}"),
-            source: Some(e.into()),
-        })?,
-    )
+    serde_json::from_str::<T>(text).map_err(|e| TmrCallError::ParseError {
+        msg: format!("Failed to parse response text: {text}"),
+        source: Some(e.into()),
+    })
 }
