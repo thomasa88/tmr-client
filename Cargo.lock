@@ -2220,19 +2220,9 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "uuid",
  "webbrowser",
-]
-
-[[package]]
-name = "tmr-client-sample"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "tmr-client",
- "tokio",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
