@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 use anyhow::Context;
-use tmr_client::{Decimal, tools::{TradeInstrument, TradeSide, TradeSize, TradeTicketArgs}};
+use tmr_client::{
+    Decimal,
+    tools::{TradeInstrument, TradeSide, TradeSize, TradeTicketArgs},
+};
 use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -20,13 +23,8 @@ async fn main() -> anyhow::Result<()> {
     let client = tmr_client::TmrClient::new("TMR Client Sample");
     let client = client.connect().await?;
 
-    // let accounts = tmr_client.get_user_accounts().await?;
-    let accounts = client.get_holdings(None).await?;
-    println!("{} accounts", accounts.len());
-
-    // dbg!(tmr_client.get_holdings(None).await?);
-    // let accounts = tmr_client.get_user_accounts().await?;
-    // dbg!(&accounts);
+    let accounts = client.get_user_accounts().await?;
+    info!("User has {} account(s)", accounts.len());
 
     // client
     //     .create_trade_ticket(TradeTicketArgs {
