@@ -33,5 +33,5 @@ INIT_RESP=$(curl -s -v \
         },
         "protocolVersion": "2025-06-18"
     }
-}' "$MCP_ENDPOINT_URL")
+}' "$MCP_ENDPOINT_URL" 2> >(grep -v '^[*{}]' >&2))
 echo "$INIT_RESP"

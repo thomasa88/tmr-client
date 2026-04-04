@@ -14,7 +14,7 @@ REG_RESP=$(curl -s -v \
 	"response_types": [ "code" ],
   "scope": "mcp"
 }' \
-  $URL)
+  $URL 2> >(grep -v '^[*{}]' >&2))
 echo $REG_RESP | jq
 
 CLIENT_ID=$(echo $REG_RESP | jq -r .client_id)
@@ -45,7 +45,7 @@ TOKEN_RESP=$(curl -s -v \
   -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=authorization_code&code=${AUTH_CODE}&redirect_uri=${REDIRECT_URI}&code_verifier=${CODE_VERIFIER}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}" \
-  $TOKEN_URL)
+  $TOKEN_URL 2> >(grep -v '^[*{}]' >&2))
 echo $TOKEN_RESP | jq
 
 if [[ $(echo "$TOKEN_RESP" | jq -r .error) != "null" ]]; then
