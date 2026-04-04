@@ -12,7 +12,7 @@ etcetera = "0.11.0"
 oauth2 = "5.0.0"
 reqwest = "0.13.2"
 # Using custom branch that supports using client secret in OAuth refresh flow
-rmcp = { git = "https://github.com/thomas88/rmcp-rust-sdk.git", rev = "4e228e37a69a5bb94ca857107a0b997d9ad2d461", default-features = false, features = [
+rmcp = { git = "https://github.com/thomasa88/rmcp-rust-sdk.git", rev = "4e228e37a69a5bb94ca857107a0b997d9ad2d461", default-features = false, features = [
     "transport-async-rw",
     "client",
     "reqwest",
