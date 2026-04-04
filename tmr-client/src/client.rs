@@ -28,6 +28,7 @@ use crate::{
 
 pub struct TmrClient<CB: AuthCallbackHandler = DefaultAuthCallbackHandler, S: State = Disconnected>
 {
+    client_name: String,
     lib_dirs: etcetera::app_strategy::Xdg,
     state: S,
     auth_callback_handler: std::marker::PhantomData<CB>,
@@ -48,23 +49,15 @@ impl State for Connected {}
 impl<CB: AuthCallbackHandler, S: State> TmrClient<CB, S> {}
 
 impl TmrClient<DefaultAuthCallbackHandler, Disconnected> {
-    pub fn new() -> TmrClient<DefaultAuthCallbackHandler, Disconnected> {
-        let lib_dirs = etcetera::choose_app_strategy(etcetera::AppStrategyArgs {
-            top_level_domain: "".to_string(),
-            author: "thomasa88".to_string(),
-            app_name: "tmr-client".to_string(),
-        })
-        .unwrap();
-        Self {
-            lib_dirs,
-            state: Disconnected {},
-            auth_callback_handler: PhantomData,
-        }
+    pub fn new(
+        client_name: impl Into<String>,
+    ) -> TmrClient<DefaultAuthCallbackHandler, Disconnected> {
+        Self::new_with_cb(client_name)
     }
 }
 
 impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
-    pub fn new_with_cb() -> TmrClient<CB, Disconnected> {
+    pub fn new_with_cb(client_name: impl Into<String>) -> TmrClient<CB, Disconnected> {
         let lib_dirs = etcetera::choose_app_strategy(etcetera::AppStrategyArgs {
             top_level_domain: "".to_string(),
             author: "thomasa88".to_string(),
@@ -72,6 +65,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
         })
         .unwrap();
         Self {
+            client_name: client_name.into(),
             lib_dirs,
             state: Disconnected {},
             auth_callback_handler: PhantomData,
@@ -108,6 +102,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
         info!("Successfully connected to MCP server");
 
         Ok(TmrClient {
+            client_name: self.client_name,
             lib_dirs: self.lib_dirs,
             state: Connected { client },
             auth_callback_handler: PhantomData,
@@ -129,7 +124,8 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
             })?;
         auth_mgr.set_credential_store(CredStore::new(&self.lib_dirs));
         let initialized =
-            auth_mgr.initialize_from_store()
+            auth_mgr
+                .initialize_from_store()
                 .await
                 .map_err(|e| TmrConnectError::AuthError {
                     msg: "Failed to initialize authorization manager from credential store"
@@ -161,7 +157,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
         let redirect_uri = auth_serve.get_listen_addr();
         debug!("Using redirect URI: {}", redirect_uri);
         oauth_state
-            .start_authorization(wanted_scopes, redirect_uri, Some("TMR Client"))
+            .start_authorization(wanted_scopes, redirect_uri, Some(&self.client_name))
             .await
             .map_err(|e| TmrConnectError::AuthError {
                 msg: "Failed to start authorization".to_string(),

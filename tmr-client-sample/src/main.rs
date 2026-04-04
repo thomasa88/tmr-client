@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let client = tmr_client::TmrClient::new();
+    let client = tmr_client::TmrClient::new("TMR Client Sample");
     let client = client.connect().await?;
 
     // let accounts = tmr_client.get_user_accounts().await?;
