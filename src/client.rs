@@ -77,26 +77,27 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
     pub async fn connect(
         self,
     ) -> Result<TmrClient<DefaultAuthCallbackHandler, Connected>, TmrConnectError> {
-        let am = self.authenticate().await?;
+        let auth_mgr = self.authenticate().await?;
 
-        // OAuth refresh works and can be performed multiple times. However, the
-        // MCP server seems to only accept the initial access token.
-        // info!("Refreshing access token...");
-        // am.refresh_token().await.unwrap();
-        // info!("Refresh done");
+        let mut mcp_client_res = self.init_mcp_client(auth_mgr).await;
 
-        let auth_client = AuthClient::new(reqwest::Client::default(), am);
-        let transport = StreamableHttpClientTransport::with_client(
-            auth_client,
-            StreamableHttpClientTransportConfig::with_uri(MCP_SERVER_URL),
-        );
-
-        let client_service = ClientInfo::default();
-        let client = client_service.serve(transport).await.map_err(|e| {
-            TmrConnectError::ConnectionError {
-                msg: "Failed to connect to MCP server".to_string(),
-                source: Some(e.into()),
+        if let Err(rmcp::service::ClientInitializeError::TransportError {
+            error: dyn_transport_err,
+            context: _,
+        }) = &mcp_client_res
+        {
+            debug!("Transport error: {dyn_transport_err:#?}");
+            if Self::is_auth_required_error(dyn_transport_err) {
+                info!("Authentication required error encountered");
+                info!("Starting new authorization flow");
+                let auth_mgr = self.authenticate_new_auth().await?;
+                mcp_client_res = self.init_mcp_client(auth_mgr).await;
             }
+        }
+
+        let mcp_client = mcp_client_res.map_err(|e| TmrConnectError::ConnectionError {
+            msg: "Failed to connect to MCP server".to_string(),
+            source: Some(e.into()),
         })?;
 
         info!("Successfully connected to MCP server");
@@ -104,9 +105,41 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
         Ok(TmrClient {
             client_name: self.client_name,
             lib_dirs: self.lib_dirs,
-            state: Connected { client },
+            state: Connected { client: mcp_client },
             auth_callback_handler: PhantomData,
         })
+    }
+
+    fn is_auth_required_error(dyn_transport_err: &rmcp::transport::DynamicTransportError) -> bool {
+        let http_error = dyn_transport_err
+            .error
+            .downcast_ref::<rmcp::transport::streamable_http_client::StreamableHttpError<
+            reqwest::Error,
+        >>();
+        matches!(
+            http_error,
+            Some(
+                rmcp::transport::streamable_http_client::StreamableHttpError::Auth(
+                    rmcp::transport::AuthError::AuthorizationRequired,
+                )
+            )
+        )
+    }
+
+    async fn init_mcp_client(
+        &self,
+        auth_mgr: AuthorizationManager,
+    ) -> Result<
+        RunningService<RoleClient, InitializeRequestParams>,
+        rmcp::service::ClientInitializeError,
+    > {
+        let auth_client = AuthClient::new(reqwest::Client::default(), auth_mgr);
+        let transport = StreamableHttpClientTransport::with_client(
+            auth_client,
+            StreamableHttpClientTransportConfig::with_uri(MCP_SERVER_URL),
+        );
+        let client_service = ClientInfo::default();
+        client_service.serve(transport).await
     }
 
     async fn authenticate(&self) -> Result<AuthorizationManager, TmrConnectError> {
@@ -123,6 +156,8 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
                 source: Some(e.into()),
             })?;
         auth_mgr.set_credential_store(CredStore::new(&self.lib_dirs));
+        // The authorization manager automatically does a token refresh if
+        // needed. See REFRESH_BUFFER_SECS in rmcp.
         let initialized =
             auth_mgr
                 .initialize_from_store()
@@ -138,7 +173,10 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
         }
 
         info!("No credentials found in store, starting new authorization flow");
+        self.authenticate_new_auth().await
+    }
 
+    async fn authenticate_new_auth(&self) -> Result<AuthorizationManager, TmrConnectError> {
         let mut oauth_state = OAuthState::new(MCP_SERVER_URL, None).await.map_err(|e| {
             TmrConnectError::AuthError {
                 msg: "Failed to initialize OAuth state".to_string(),
