@@ -15,6 +15,15 @@ Since the API has no versioning and AI agents should be able to adopt to changin
 one should not expect the API to be stable.
 This means that TMR client can stop working at any moment.
 
+## Example Client
+
+An example client is available in the `examples` directory.
+It can be run as follows:
+
+```bash
+cargo run --example simple-client
+```
+
 ## Security Warning
 
 The MCP API does not permit any actions taken on your behalf,
