@@ -1,6 +1,7 @@
 // Copyright 2026 Thomas Axelsson
 // SPDX-License-Identifier: MIT
 
+use rust_decimal::dec;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -30,26 +31,49 @@ async fn main() -> anyhow::Result<()> {
 
     println!();
     println!("-------- Holdings --------");
-    let holdings = montrose.get_holdings(None).await?;
-    for holding in holdings {
+    let accounts = montrose.get_holdings(None).await?;
+    for account in accounts {
         println!(
-            "Account: {} {} {} {}",
-            holding.account_id, holding.account_number, holding.account_name, holding.currency
+            "Account: {} {}",
+            account.account_number, account.account_name
+        );
+        let currency = &account.summary.currency;
+        println!("  Account ID: {}", account.account_id);
+        println!("  Currency: {}", account.summary.currency);
+        println!(
+            "  Total market value: {:.2} {}",
+            account.summary.total_market_value, currency
         );
         println!(
-            "  Total market value: {}\n  Available for purchase: {}\n  Total value: {}\n  Currency: {}",
-            holding.summary.total_market_value,
-            holding.summary.available_for_purchase,
-            holding.summary.total_value,
-            holding.summary.currency
+            "  Available for purchase: {:.2} {}",
+            account.summary.available_for_purchase, currency
         );
-        let mut positions = holding.positions;
+        println!(
+            "  Total value: {:.2} {}",
+            account.summary.total_value, currency
+        );
+
+        {
+            let weight =
+                account.summary.available_for_purchase / account.summary.total_value * dec!(100.0);
+            println!("  Position: Cash");
+            println!(
+                "    Value: {:.2} {} ({:.2}%)",
+                account.summary.available_for_purchase, currency, weight
+            );
+        }
+        let mut positions = account.positions;
         positions.sort_by(|a, b| a.instrument_name.cmp(&b.instrument_name));
         for position in positions {
+            let weight =
+                position.market_value.account_currency / account.summary.total_value * dec!(100.0);
             println!("  Position: {}", position.instrument_name);
+            println!("    Order book ID: {}", position.orderbook_id);
+            println!("    Ticker: {}", position.ticker);
+            println!("    Quantity: {:.2}", position.quantity);
             println!(
-                "    Order book ID: {}\n    Ticker: {}\n    Quantity: {}",
-                position.orderbook_id, position.ticker, position.quantity,
+                "    Value: {:.2} {} ({:.2}%)",
+                position.market_value.account_currency, currency, weight
             );
         }
     }
