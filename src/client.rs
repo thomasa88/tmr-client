@@ -23,7 +23,7 @@ use crate::{
     cred_store::CredStore,
     oauth_handler::{self, AuthCallbackHandler, DefaultAuthCallbackHandler},
     result::TmrConnectError,
-    tools::{self, GetHoldingsResult},
+    tools,
 };
 
 pub struct TmrClient<CB: AuthCallbackHandler = DefaultAuthCallbackHandler, S: State = Disconnected>
@@ -266,7 +266,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
     pub async fn get_holdings(
         &self,
         account_id: Option<Uuid>,
-    ) -> Result<GetHoldingsResult, TmrCallError> {
+    ) -> Result<Vec<tools::Account>, TmrCallError> {
         let mut args = serde_json::Map::new();
         args.insert(
             "accountId".to_string(),
@@ -278,7 +278,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
     /// Returns all user accounts with stable account IDs and display names. Use
     /// this tool to discover valid account IDs before calling GetHoldings for a
     /// specific account.
-    pub async fn get_user_accounts(&self) -> Result<tools::Accounts, TmrCallError> {
+    pub async fn get_user_accounts(&self) -> Result<Vec<tools::AccountInfo>, TmrCallError> {
         self.call("get_user_accounts", None).await
     }
 

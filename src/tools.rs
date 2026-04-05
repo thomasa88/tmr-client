@@ -9,8 +9,6 @@ use uuid::Uuid;
 
 // TODO: Generate types from tool input and output JSON schemas?
 
-pub type GetHoldingsResult = Vec<Account>;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
@@ -52,8 +50,6 @@ pub struct CurrencyValue {
     pub account_currency: Decimal,
     pub instrument_currency: Decimal,
 }
-
-pub type Accounts = Vec<AccountInfo>;
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
