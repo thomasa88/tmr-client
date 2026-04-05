@@ -23,9 +23,13 @@ pub struct Account {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountSummary {
+    /// Value of the investments in the account
     pub total_market_value: Decimal,
+    /// Amount available for purchase
     pub available_for_purchase: Decimal,
+    /// Total value of the account. The sum of investments and cash.
     pub total_value: Decimal,
+    /// Currency of the account
     pub currency: String,
 }
 
@@ -36,18 +40,23 @@ pub struct Position {
     pub ticker: String,
     pub orderbook_id: u64,
     pub possible_orderbook_ids: Vec<u64>,
+    /// Number of shares
     pub quantity: Decimal,
-    pub market_value: CurrencyValue,
-    pub unrealized_result: CurrencyValue,
+    /// Value of the position (quantity * price)
+    pub market_value: InstrumentValue,
+    pub unrealized_result: InstrumentValue,
     pub unrealized_result_percent: Decimal,
     pub instrument_currency: String,
+    /// Exchange rate (instrument_currency / account_currency)
     pub fx_rate: Decimal,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CurrencyValue {
+pub struct InstrumentValue {
+    /// Value in the account currency
     pub account_currency: Decimal,
+    /// Value in the instrument currency
     pub instrument_currency: Decimal,
 }
 
@@ -57,6 +66,7 @@ pub struct CurrencyValue {
 pub struct AccountInfo {
     pub account_id: Uuid,
     pub account_number: String,
+    /// Account name, as set by the user
     #[serde_as(as = "NoneAsEmptyString")]
     pub account_name: Option<String>,
 }
@@ -89,7 +99,7 @@ pub struct TradeTicketArgs {
 pub enum TradeSize {
     /// SEK amount to trade.
     #[serde(rename = "amount")]
-    Amount(Decimal),
+    AmountSek(Decimal),
     /// Number of shares to trade.
     Quantity(Decimal),
 }
