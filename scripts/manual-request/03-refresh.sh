@@ -31,7 +31,7 @@ REG_RESP=$(curl -s -v \
   -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=refresh_token&refresh_token=${REFRESH_TOKEN}&scope=mcp&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}" \
-  $TOKEN_URL)
+  $TOKEN_URL 2> >(grep -v '^[*{}]' >&2))
 echo $REG_RESP | jq
 
 if [[ $(echo "$REG_RESP" | jq -r .error) != "null" ]]; then
