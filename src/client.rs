@@ -262,14 +262,15 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
 impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
     /// Fetches and logs available tools and prompts from the server
     /// Used for TmrClient development.
-    pub async fn introspect(&self) {
-        info!("Fetching available tools from server...");
+    pub async fn introspect(&self) -> String {
+        let mut result = String::new();
+        result += &format!("Fetching available tools from server...\n");
 
         match self.state.client.peer().list_all_tools().await {
             Ok(tools) => {
-                info!("Available tools: {}", tools.len());
+                result += &format!("Available tools: {}\n", tools.len());
                 for tool in tools {
-                    info!(
+                    result += &format!(
                         "- {} ({})\n{:#?}\n{:#?}\n",
                         tool.name,
                         tool.description.unwrap_or_default(),
@@ -279,23 +280,24 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Connected> {
                 }
             }
             Err(e) => {
-                info!("Error fetching tools: {}", e);
+                result += &format!("Error fetching tools: {e}\n");
             }
         }
 
-        info!("Fetching available prompts from server...");
+        result += &format!("Fetching available prompts from server...\n");
 
         match self.state.client.peer().list_all_prompts().await {
             Ok(prompts) => {
-                info!("Available prompts: {}", prompts.len());
+                result += &format!("Available prompts: {}\n", prompts.len());
                 for prompt in prompts {
-                    info!("- {}", prompt.name);
+                    result += &format!("- {}\n", prompt.name);
                 }
             }
             Err(e) => {
-                info!("Error fetching prompts: {}", e);
+                result += &format!("Error fetching prompts: {e}\n");
             }
         }
+        result
     }
 
     /// Returns holdings for either one account (when accountId is provided) or

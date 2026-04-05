@@ -1,0 +1,104 @@
+Fetching available tools from server...
+Available tools: 3
+- get_holdings (Returns holdings for either one account (when accountId is provided) or all accessible accounts. Use GetUserAccounts first to find valid account IDs.)
+{
+    "properties": Object {
+        "accountId": Object {
+            "description": String("Optional account ID. If omitted, holdings are returned for all accessible accounts."),
+            "format": String("uuid"),
+            "type": Array [
+                String("string"),
+                String("null"),
+            ],
+        },
+    },
+    "required": Array [
+        String("accountId"),
+    ],
+    "type": String("object"),
+}
+None
+- create_trade_ticket (Creates a pre-filled trade ticket URL for the Montrose app. Specify side (Buy/Sell), quantity or amount, and an instrument identifier. Instruments can be specified by orderbookId directly, or by ticker/name which will be resolved automatically. Returns a URL that opens the trade ticket in the Montrose app with the order details pre-filled.)
+{
+    "properties": Object {
+        "accountId": Object {
+            "default": Null,
+            "description": String("Optional account ID. Use GetUserAccounts to find valid account IDs."),
+            "format": String("uuid"),
+            "type": Array [
+                String("string"),
+                String("null"),
+            ],
+        },
+        "amount": Object {
+            "default": Null,
+            "description": String("Optional amount to trade, always in SEK (Swedish Krona). For foreign-currency instruments, the app converts the SEK amount to shares automatically. If the user specifies an amount in another currency (e.g. USD, EUR), convert it to SEK first. Exactly one of quantity or amount must be provided."),
+            "type": Array [
+                String("number"),
+                String("null"),
+            ],
+        },
+        "name": Object {
+            "default": Null,
+            "description": String("Optional instrument name (string) to search for the instrument."),
+            "type": Array [
+                String("string"),
+                String("null"),
+            ],
+        },
+        "orderbookId": Object {
+            "default": Null,
+            "description": String("Optional orderbookId (int) to identify the instrument directly."),
+            "type": Array [
+                String("integer"),
+                String("null"),
+            ],
+        },
+        "price": Object {
+            "default": Null,
+            "description": String("Optional price for the order."),
+            "type": Array [
+                String("number"),
+                String("null"),
+            ],
+        },
+        "quantity": Object {
+            "default": Null,
+            "description": String("Optional number of shares to trade. Exactly one of quantity or amount must be provided."),
+            "type": Array [
+                String("number"),
+                String("null"),
+            ],
+        },
+        "side": Object {
+            "description": String("The side of the order: Buy or Sell."),
+            "enum": Array [
+                String("Unknown"),
+                String("Buy"),
+                String("Sell"),
+            ],
+            "type": String("string"),
+        },
+        "ticker": Object {
+            "default": Null,
+            "description": String("Optional ticker (string) to identify the instrument by ticker symbol, e.g. \"VOLV B\"."),
+            "type": Array [
+                String("string"),
+                String("null"),
+            ],
+        },
+    },
+    "required": Array [
+        String("side"),
+    ],
+    "type": String("object"),
+}
+None
+- get_user_accounts (Returns all user accounts with stable account IDs and display names. Use this tool to discover valid account IDs before calling GetHoldings for a specific account.)
+{
+    "properties": Object {},
+    "type": String("object"),
+}
+None
+Fetching available prompts from server...
+Error fetching prompts: Mcp error: -32601: Method 'prompts/list' is not available.
