@@ -15,14 +15,19 @@ Since the API has no versioning and AI agents should be able to adopt to changin
 one should not expect the API to be stable.
 This means that TMR client can stop working at any moment.
 
-## Example Client
+## Examples
 
-An example client is available in the `examples` directory.
-It can be run as follows:
+A set of examples using `tmr-client` is available in the `examples` directory.
+They can be run as follows:
 
 ```bash
-cargo run --example simple-client
+cargo run --example=show-data
 ```
+
+* show-data: Show account data
+* create-trade: Creates a hardcoded trade request
+* create-balanced-trade: Creates trade requests with the given asset allocation
+* devel: Used for TMR Client development
 
 ## Security Warning
 
