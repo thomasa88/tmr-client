@@ -1,22 +1,18 @@
 #!/bin/bash -e
 
-CLIENT_NAME="Test client"
+SCRIPT_DIR="$(dirname "$0")"
+source "$SCRIPT_DIR/functions.sh"
 
 URL=https://mcp.montrose.io/register
-REG_RESP=$(curl -s -v \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-	"client_name": "$CLIENT_NAME",
-	"redirect_uris": [ "http://localhost:9000/cb" ],
-	"grant_types": [ "authorization_code", "refresh_token" ],
+DATA='{
+  "client_name": "'"$CLIENT_NAME"'",
+  "redirect_uris": [ "http://localhost:9000/cb" ],
+  "grant_types": [ "authorization_code", "refresh_token" ],
   "token_endpoint_auth_method": "none",
-	"response_types": [ "code" ],
+  "response_types": [ "code" ],
   "scope": "mcp"
-}' \
-  $URL 2> >(grep -v '^[*{}]' >&2))
-echo $REG_RESP | jq
-
+}'
+REG_RESP=$(call_curl "$DATA" -X POST -H "Content-Type: application/json" $URL)
 CLIENT_ID=$(echo $REG_RESP | jq -r .client_id)
 CLIENT_SECRET=$(echo $REG_RESP | jq -r .client_secret)
 REDIRECT_URI=http://localhost:9000/cb
@@ -41,12 +37,12 @@ echo "Authorization code: $AUTH_CODE"
 
 TOKEN_URL=https://mcp.montrose.io/token
 # reource=https://mcp.montrose.io
-TOKEN_RESP=$(curl -s -v \
+DATA="grant_type=authorization_code&code=${AUTH_CODE}&redirect_uri=${REDIRECT_URI}&code_verifier=${CODE_VERIFIER}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}"
+TOKEN_RESP=$(call_curl "$DATA" \
   -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=authorization_code&code=${AUTH_CODE}&redirect_uri=${REDIRECT_URI}&code_verifier=${CODE_VERIFIER}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}" \
-  $TOKEN_URL 2> >(grep -v '^[*{}]' >&2))
-echo $TOKEN_RESP | jq
+   \
+  $TOKEN_URL)
 
 if [[ $(echo "$TOKEN_RESP" | jq -r .error) != "null" ]]; then
   echo "Error getting tokens: $(echo "$TOKEN_RESP" | jq -r .error)"

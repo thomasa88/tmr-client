@@ -2,7 +2,8 @@
 
 # Usage: ./03-mcp-init.sh [credentials_file]
 
-CLIENT_NAME="Test client"
+SCRIPT_DIR="$(dirname "$0")"
+source "$SCRIPT_DIR/functions.sh"
 
 CRED_FILE="$1"
 if [[ -z "$CRED_FILE" ]]; then
@@ -16,12 +17,7 @@ echo "Access token: $ACCESS_TOKEN"
 
 # resource = MCP_ENDPOINT_URL?
 MCP_ENDPOINT_URL=https://mcp.montrose.io
-INIT_RESP=$(curl -s -v \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H 'Accept: application/json, text/event-stream' \
-  -d '{
+DATA='{
     "jsonrpc": "2.0",
     "id": 0,
     "method": "initialize",
@@ -33,5 +29,10 @@ INIT_RESP=$(curl -s -v \
         },
         "protocolVersion": "2025-06-18"
     }
-}' "$MCP_ENDPOINT_URL" 2> >(grep -v '^[*{}]' >&2))
-echo "$INIT_RESP"
+}'
+INIT_RESP=$(call_curl "$DATA" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Accept: application/json, text/event-stream' \
+  "$MCP_ENDPOINT_URL")

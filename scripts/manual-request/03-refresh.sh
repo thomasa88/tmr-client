@@ -2,7 +2,8 @@
 
 # Usage: ./03-refresh.sh [credentials_file]
 
-CLIENT_NAME="Test client"
+SCRIPT_DIR="$(dirname "$0")"
+source "$SCRIPT_DIR/functions.sh"
 
 CRED_FILE="$1"
 if [[ -z "$CRED_FILE" ]]; then
@@ -24,15 +25,12 @@ if [[ -z "$REFRESH_TOKEN" ]]; then
   exit 1
 fi
 
-CLIENT_NAME="Test client"
-
 TOKEN_URL=https://mcp.montrose.io/token
-REG_RESP=$(curl -s -v \
+DATA="grant_type=refresh_token&refresh_token=${REFRESH_TOKEN}&scope=mcp&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}"
+REG_RESP=$(call_curl "$DATA" \
   -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=refresh_token&refresh_token=${REFRESH_TOKEN}&scope=mcp&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}" \
-  $TOKEN_URL 2> >(grep -v '^[*{}]' >&2))
-echo $REG_RESP | jq
+  $TOKEN_URL)
 
 if [[ $(echo "$REG_RESP" | jq -r .error) != "null" ]]; then
   echo "Error refreshing tokens: $(echo "$REG_RESP" | jq -r .error)"
