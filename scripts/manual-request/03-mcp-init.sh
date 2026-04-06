@@ -10,10 +10,10 @@ if [[ -z "$CRED_FILE" ]]; then
   CRED_FILE="credentials.json"
 fi
 
-jq < "$CRED_FILE"
 ACCESS_TOKEN=$(jq -r .access_token < "$CRED_FILE")
 
 echo "Access token: $ACCESS_TOKEN"
+echo
 
 # resource = MCP_ENDPOINT_URL?
 MCP_ENDPOINT_URL=https://mcp.montrose.io

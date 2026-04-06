@@ -34,3 +34,27 @@ call_curl() {
 
   echo "$resp_body"
 }
+
+# Saves credentials
+#
+# Old credentials are rotated to files with increasing number suffix.
+#
+# Expects the following variables to be set:
+# - CLIENT_ID
+# - CLIENT_SECRET
+# - ACCESS_TOKEN
+# - REFRESH_TOKEN
+save_credentials() {
+  # Rotate old credential files
+  mv credentials.json.3 credentials.json.4 2>/dev/null || true
+  mv credentials.json.2 credentials.json.3 2>/dev/null || true
+  mv credentials.json.1 credentials.json.2 2>/dev/null || true
+  mv credentials.json credentials.json.1 2>/dev/null || true
+
+  echo "{
+    \"client_id\": \"$CLIENT_ID\",
+    \"client_secret\": \"$CLIENT_SECRET\",
+    \"access_token\": \"$ACCESS_TOKEN\",
+    \"refresh_token\": \"$REFRESH_TOKEN\"
+  }" > credentials.json
+}

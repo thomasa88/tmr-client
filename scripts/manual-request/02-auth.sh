@@ -52,23 +52,13 @@ fi
 ACCESS_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.access_token')
 REFRESH_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.refresh_token')
 
+echo
 echo "Client ID: $CLIENT_ID"
 echo "Client secret: $CLIENT_SECRET"
 echo "Access token: $ACCESS_TOKEN"
 echo "Refresh token: $REFRESH_TOKEN"
 
-# Rotate old credential files
-mv credentials.json.3 credentials.json.4 2>/dev/null || true
-mv credentials.json.2 credentials.json.3 2>/dev/null || true
-mv credentials.json.1 credentials.json.2 2>/dev/null || true
-mv credentials.json credentials.json.1 2>/dev/null || true
-
-echo "{
-  \"client_id\": \"$CLIENT_ID\",
-  \"client_secret\": \"$CLIENT_SECRET\",
-  \"access_token\": \"$ACCESS_TOKEN\",
-  \"refresh_token\": \"$REFRESH_TOKEN\"
-}" > credentials.json
+save_credentials
 
 echo
 echo "Saved credentials file: credentials.json"

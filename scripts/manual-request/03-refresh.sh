@@ -10,7 +10,6 @@ if [[ -z "$CRED_FILE" ]]; then
   CRED_FILE="credentials.json"
 fi
 
-jq < "$CRED_FILE"
 CLIENT_ID=$(jq -r .client_id < "$CRED_FILE")
 CLIENT_SECRET=$(jq -r .client_secret < "$CRED_FILE")
 REFRESH_TOKEN=$(jq -r .refresh_token < "$CRED_FILE")
@@ -19,6 +18,7 @@ echo "Credentials file: $CRED_FILE"
 echo "Client ID: $CLIENT_ID"
 echo "Client secret: $CLIENT_SECRET"
 echo "Original refresh token: $REFRESH_TOKEN"
+echo
 
 if [[ -z "$REFRESH_TOKEN" ]]; then
   echo "Usage: $0 <client_id> <client_secret> <refresh_token>"
@@ -40,21 +40,11 @@ fi
 ACCESS_TOKEN=$(echo "$REG_RESP" | jq -r '.access_token')
 REFRESH_TOKEN=$(echo "$REG_RESP" | jq -r '.refresh_token')
 
+echo
 echo "New access token: $ACCESS_TOKEN"
 echo "New refresh token: $REFRESH_TOKEN"
 
-# Rotate old credential files
-mv credentials.json.3 credentials.json.4 2>/dev/null || true
-mv credentials.json.2 credentials.json.3 2>/dev/null || true
-mv credentials.json.1 credentials.json.2 2>/dev/null || true
-mv credentials.json credentials.json.1 2>/dev/null || true
-
-echo "{
-  \"client_id\": \"$CLIENT_ID\",
-  \"client_secret\": \"$CLIENT_SECRET\",
-  \"access_token\": \"$ACCESS_TOKEN\",
-  \"refresh_token\": \"$REFRESH_TOKEN\"
-}" > credentials.json
+save_credentials
 
 echo
 echo "Saved credentials file: credentials.json"
