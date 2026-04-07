@@ -108,6 +108,7 @@ impl AuthCallbackHandler for DefaultAuthCallbackHandler {
         });
 
         info!("Opening authorization page in browser: {auth_url}");
+        println!("Please complete the authentication in the opened browser window.");
         webbrowser::open(auth_url).ok();
         info!("Waiting for browser callback");
         let params = code_receiver
@@ -116,6 +117,7 @@ impl AuthCallbackHandler for DefaultAuthCallbackHandler {
                 msg: format!("Failed to receive callback parameters: {e}"),
                 source: Some(e.into()),
             })?;
+        println!("Authenticaton completed.");
         Ok(params)
     }
 }
