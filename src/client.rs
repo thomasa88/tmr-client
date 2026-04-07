@@ -87,6 +87,7 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
         }) = &mcp_client_res
         {
             debug!("Transport error: {dyn_transport_err:#?}");
+            // Try again if it was an authorization error
             if Self::is_auth_required_error(dyn_transport_err) {
                 info!("Authentication required error encountered");
                 info!("Starting new authorization flow");
@@ -121,6 +122,8 @@ impl<CB: AuthCallbackHandler> TmrClient<CB, Disconnected> {
             Some(
                 rmcp::transport::streamable_http_client::StreamableHttpError::Auth(
                     rmcp::transport::AuthError::AuthorizationRequired,
+                ) | rmcp::transport::streamable_http_client::StreamableHttpError::AuthRequired(
+                    rmcp::transport::streamable_http_client::AuthRequiredError { .. }
                 )
             )
         )
