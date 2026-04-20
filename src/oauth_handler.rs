@@ -96,7 +96,7 @@ impl AuthCallbackHandler for DefaultAuthCallbackHandler {
             .route("/callback", get(callback_handler))
             .with_state(app_state);
 
-        info!("Listening for callback at: http://{}", self.listen_addr);
+        info!("Listening for callback at: {}", self.listen_addr);
 
         let listener = self.listener;
         tokio::spawn(async move {
