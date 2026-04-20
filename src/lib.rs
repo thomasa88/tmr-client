@@ -3,6 +3,7 @@
 
 pub use client::TmrClient;
 pub use result::TmrCallError;
+pub use result::TmrConnectError;
 
 pub use rust_decimal::Decimal;
 pub use uuid::Uuid;
@@ -10,5 +11,5 @@ pub use uuid::Uuid;
 mod client;
 mod result;
 pub mod tools;
-mod oauth_handler;
+pub mod oauth_handler;
 mod cred_store;
