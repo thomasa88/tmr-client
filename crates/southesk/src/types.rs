@@ -45,6 +45,30 @@ impl AccountNumber {
     }
 }
 
+impl PartialEq<str> for AccountNumber {
+    fn eq(&self, other: &str) -> bool {
+        self.0 == other
+    }
+}
+
+impl PartialEq<&str> for AccountNumber {
+    fn eq(&self, other: &&str) -> bool {
+        self.0 == *other
+    }
+}
+
+impl PartialEq<AccountNumber> for str {
+    fn eq(&self, other: &AccountNumber) -> bool {
+        other == self
+    }
+}
+
+impl PartialEq<AccountNumber> for &str {
+    fn eq(&self, other: &AccountNumber) -> bool {
+        other == self
+    }
+}
+
 /// ISO 4217 currency code.
 ///
 /// Examples: `SEK`, `USD`, `EUR`
@@ -73,6 +97,30 @@ impl<'de> Deserialize<'de> for Currency {
     {
         let code = String::deserialize(deserializer)?;
         Currency::new(code).map_err(serde::de::Error::custom)
+    }
+}
+
+impl PartialEq<str> for Currency {
+    fn eq(&self, other: &str) -> bool {
+        self.0.eq_ignore_ascii_case(other)
+    }
+}
+
+impl PartialEq<&str> for Currency {
+    fn eq(&self, other: &&str) -> bool {
+        self.0.eq_ignore_ascii_case(other)
+    }
+}
+
+impl PartialEq<Currency> for str {
+    fn eq(&self, other: &Currency) -> bool {
+        other == self
+    }
+}
+
+impl PartialEq<Currency> for &str {
+    fn eq(&self, other: &Currency) -> bool {
+        other == self
     }
 }
 
@@ -481,6 +529,20 @@ mod tests {
     }
 
     #[test]
+    fn account_number_eq() {
+        let account_number = AccountNumber("1111233".to_string());
+        // Test symmetry of str == AccountNumber
+        assert_eq!(account_number, "1111233");
+        assert_eq!("1111233", account_number);
+
+        assert_eq!(&account_number, "1111233");
+        assert_eq!("1111233", &account_number);
+
+        assert_eq!(&account_number, &account_number);
+        assert_eq!(account_number, account_number);
+    }
+
+    #[test]
     fn currency_parsing() {
         assert_eq!(Currency::new("USD").unwrap(), Currency("USD".to_string()));
         assert_eq!(Currency::new("sek").unwrap(), Currency("SEK".to_string()));
@@ -511,5 +573,23 @@ mod tests {
 
         let invalid_json = "\"US2\"";
         assert!(serde_json::from_str::<Currency>(invalid_json).is_err());
+    }
+
+    #[test]
+    fn currency_eq() {
+        let currency = Currency("USD".to_string());
+        // Test symmetry of str == Currency
+        assert_eq!(currency, "USD");
+        assert_eq!(currency, "usd");
+        assert_eq!("USD", currency);
+        assert_eq!("usd", currency);
+
+        assert_eq!(&currency, "USD");
+        assert_eq!(&currency, "usd");
+        assert_eq!("USD", &currency);
+        assert_eq!("usd", &currency);
+
+        assert_eq!(&currency, &currency);
+        assert_eq!(currency, currency);
     }
 }

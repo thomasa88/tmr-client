@@ -26,6 +26,10 @@ Headers:
 
 ## [0.0.9] - 2026-07-19
 
+### Added
+
+- Support `==` with `str` for `AccountNumber` and `Currency`.
+
 ### Fixed
 
 - Move Montrose API dump into southesk crate. Make the crate build without the workspace.
