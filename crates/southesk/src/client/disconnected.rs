@@ -43,7 +43,31 @@ impl Client<Disconnected> {
 
         let mut mcp_client_res = None;
 
-        if let Some(auth_mgr) = self.auth_mgr_from_creds().await? {
+        // Reactive discovery
+        let transport = StreamableHttpClientTransport::from_uri(MCP_SERVER_URL);
+        let challenge = match ClientInfo::default().serve(transport).await {
+            Ok(_) => {
+                return Err(ClientConnectError::AuthError {
+                    msg: "server did not reply with a challenge".to_string(),
+                    source: None,
+                });
+            }
+            Err(e) => match e.auth_challenge() {
+                Some(s) => s.to_string(),
+                None => {
+                    return Err(ClientConnectError::ConnectionError {
+                        msg: "failed to connect to MCP server during reactive discovery"
+                            .to_string(),
+                        // The error type is boxed since it is very large (> 700 bytes), to
+                        // avoid creating a gigantic Result type.
+                        source: Some(Box::new(e)),
+                    });
+                }
+            },
+        };
+        debug!("Received auth challenge from server: {}", challenge);
+
+        if let Some(auth_mgr) = self.auth_mgr_from_creds(&challenge).await? {
             info!("Authenticating using stored credentials");
             let res = self.init_mcp_client(auth_mgr).await;
             if let Err(e) = &res
@@ -59,7 +83,7 @@ impl Client<Disconnected> {
 
         if mcp_client_res.is_none() {
             info!("Starting new authorization flow.",);
-            let auth_mgr = self.authenticate_new_auth().await?;
+            let auth_mgr = self.authenticate_new_auth(&challenge).await?;
             mcp_client_res = Some(self.init_mcp_client(auth_mgr).await);
         }
 
@@ -129,6 +153,7 @@ impl Client<Disconnected> {
 
     async fn auth_mgr_from_creds(
         &self,
+        challenge: &str,
     ) -> Result<Option<AuthorizationManager>, ClientConnectError> {
         // Cannot convert an OAuthState into an AuthorizationManager, as it
         // initially isn't in the Authorized state. So we start with an
@@ -147,6 +172,7 @@ impl Client<Disconnected> {
         let initialized = Self::auth_mgr_init_from_store_with_secret(
             &mut auth_mgr,
             MCP_SERVER_URL,
+            challenge,
             self.cred_store.clone(),
         )
         .await?;
@@ -164,6 +190,7 @@ impl Client<Disconnected> {
     async fn auth_mgr_init_from_store_with_secret(
         auth_mgr: &mut AuthorizationManager,
         base_url: impl Into<String>,
+        challenge: &str,
         cred_store: impl FullCredStore,
     ) -> Result<bool, ClientConnectError> {
         let creds = cred_store
@@ -189,12 +216,13 @@ impl Client<Disconnected> {
             .with_client_secret(client_secret);
 
         let metadata = auth_mgr
-            .discover_metadata()
+            .resolve_metadata_from_challenge(Some(challenge))
             .await
-            .to_connect_auth_err("failed to discover authorization server metadata")?;
+            .to_connect_auth_err("failed to discover authorization server metadata")?
+            .metadata;
         auth_mgr.set_metadata(metadata);
 
-        // // auth_mgr.configure_client_credentials(config) does basically the same as configure_client?
+        // auth_mgr.configure_client_credentials(config) does basically the same as configure_client?
         auth_mgr
             .configure_client(oauth_config)
             .to_connect_auth_err(
@@ -204,7 +232,10 @@ impl Client<Disconnected> {
         Ok(true)
     }
 
-    async fn authenticate_new_auth(&self) -> Result<AuthorizationManager, ClientConnectError> {
+    async fn authenticate_new_auth(
+        &self,
+        challenge: &str,
+    ) -> Result<AuthorizationManager, ClientConnectError> {
         let Some(auth_handler) = &self.auth_handler else {
             return Err(ClientConnectError::AuthError {
                 msg: "need to do a new authentication, but interactive authentication is disabled."
@@ -220,17 +251,19 @@ impl Client<Disconnected> {
         let redirect_uri = auth_handler.redirect_uri();
         debug!("Using redirect URI: {}", redirect_uri);
 
-        let (mut oauth_state, client_secret) = Self::auth_mgr_start_authorization_with_secret(
-            wanted_scopes,
-            redirect_uri,
-            &self.name,
-            self.cred_store.clone(),
-        )
-        .await
-        .map_err(|e| ClientConnectError::AuthError {
-            msg: "failed to start authorization".to_string(),
-            source: Some(e.into()),
-        })?;
+        let (mut oauth_state, client_secret) =
+            Self::oauth_state_start_authorization_and_get_secret(
+                wanted_scopes,
+                redirect_uri,
+                challenge,
+                &self.name,
+                self.cred_store.clone(),
+            )
+            .await
+            .map_err(|e| ClientConnectError::AuthError {
+                msg: "failed to start authorization".to_string(),
+                source: Some(e.into()),
+            })?;
 
         // todo: check client_secret has value
 
@@ -275,11 +308,12 @@ impl Client<Disconnected> {
     }
 
     /// Replacement for [`OAuthState::start_authorization`] that returns the client secret.
-    async fn auth_mgr_start_authorization_with_secret<
+    async fn oauth_state_start_authorization_and_get_secret<
         S: CredentialStore + FullCredStore + 'static,
     >(
         scopes: &[&str],
         redirect_uri: &str,
+        challenge: &str,
         client_name: &str,
         cred_store: S,
     ) -> Result<(OAuthState, Option<String>), rmcp::transport::AuthError> {
@@ -294,7 +328,10 @@ impl Client<Disconnected> {
         auth_mgr.set_credential_store(cred_store);
 
         debug!("start discovery");
-        let metadata = auth_mgr.discover_metadata().await?;
+        let metadata = auth_mgr
+            .resolve_metadata_from_challenge(Some(challenge))
+            .await?
+            .metadata;
         auth_mgr.set_metadata(metadata);
         let _ = auth_mgr.select_scopes(None, scopes);
 

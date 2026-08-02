@@ -345,9 +345,8 @@ fn parse_result<T: DeserializeOwned>(res: &CallToolResult) -> Result<T, ClientCa
         .content
         .first()
         .ok_or(ClientCallError::parse_err("no content element in response"))?
-        .raw
         .as_text()
-        .ok_or(ClientCallError::parse_err("no raw text in response"))?
+        .ok_or(ClientCallError::parse_err("no text in response"))?
         .text;
     if res.is_error.unwrap_or(false) {
         return Err(ClientCallError::McpError(text.clone()));

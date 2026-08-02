@@ -29,7 +29,7 @@ etcetera = "0.11.0"
 indexmap = { version = "2.14.0", features = ["serde"] }
 keyring-core = { version = "1.0.0" }
 reqwest = "0.13.2"
-rmcp = { version = "1.7.0", default-features = false }
+rmcp = { version = "3.1.0", default-features = false }
 rust_decimal = { version = "1.40.0", features = ["macros"] }
 serde = { version = "1.0.228", features = ["derive"] }
 # preserve_order: Print data in a nice order when using introspect()
