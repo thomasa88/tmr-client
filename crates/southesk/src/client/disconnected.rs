@@ -71,7 +71,7 @@ impl Client<Disconnected> {
             info!("Authenticating using stored credentials");
             let res = self.init_mcp_client(auth_mgr).await;
             if let Err(e) = &res
-                && Self::is_auth_required_error(e)
+                && e.is_authorization_required()
             {
                 info!("Authentication required error encountered");
             } else {
@@ -108,32 +108,6 @@ impl Client<Disconnected> {
                 source: None,
             }),
         }
-    }
-
-    fn is_auth_required_error(client_init_err: &rmcp::service::ClientInitializeError) -> bool {
-        let rmcp::service::ClientInitializeError::TransportError {
-            error: dyn_transport_err,
-            context: _,
-        } = client_init_err
-        else {
-            return false;
-        };
-
-        let http_error = dyn_transport_err
-            .error
-            .downcast_ref::<rmcp::transport::streamable_http_client::StreamableHttpError<
-            reqwest::Error,
-        >>();
-        matches!(
-            http_error,
-            Some(
-                rmcp::transport::streamable_http_client::StreamableHttpError::Auth(
-                    rmcp::transport::AuthError::AuthorizationRequired,
-                ) | rmcp::transport::streamable_http_client::StreamableHttpError::AuthRequired(
-                    rmcp::transport::streamable_http_client::AuthRequiredError { .. }
-                )
-            )
-        )
     }
 
     async fn init_mcp_client(
