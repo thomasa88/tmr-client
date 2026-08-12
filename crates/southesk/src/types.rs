@@ -149,8 +149,7 @@ pub struct AccountHoldings {
     pub summary: AccountSummary,
     /// List of positions (instruments) in the account.
     pub positions: Vec<Position>,
-    /// List of currency positions (cash holdings) in the account of other
-    /// currencies than the main currency.
+    /// List of currency positions (cash holdings) in the account.
     pub currency_positions: Vec<CurrencyPosition>,
 }
 
@@ -186,13 +185,15 @@ pub enum AccountType {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountSummary {
-    /// Value of the investments in the account.
+    /// Value of the investments in the account, converted to the account's main
+    /// currency.
     pub total_market_value: Decimal,
-    /// Amount available for purchase.
+    /// Amount available for purchase, converted to the account's main currency.
     pub available_for_purchase: Decimal,
-    /// Total value of the account. The sum of investments and cash.
+    /// Total value of the account. The sum of investments and cash, converted
+    /// to the account's main currency.
     pub total_value: Decimal,
-    /// Currency of the account.
+    /// Main currency of the account.
     pub currency: Currency,
 }
 
