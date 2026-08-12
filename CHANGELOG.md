@@ -24,6 +24,10 @@ Headers:
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- `Currency` helper functions to create common currencies.
+
 ## [0.0.9] - 2026-07-19
 
 ### Added

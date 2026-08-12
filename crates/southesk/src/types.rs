@@ -88,6 +88,21 @@ impl Currency {
             Ok(Currency(code.to_uppercase()))
         }
     }
+
+    /// Creates a new SEK currency instance.
+    pub fn sek() -> Self {
+        Self("SEK".to_owned())
+    }
+
+    /// Creates a new USD currency instance.
+    pub fn usd() -> Self {
+        Self("USD".to_owned())
+    }
+
+    /// Creates a new EUR currency instance.
+    pub fn eur() -> Self {
+        Self("EUR".to_owned())
+    }
 }
 
 impl<'de> Deserialize<'de> for Currency {
