@@ -3,13 +3,221 @@
     "name": "montrose-mcp",
     "title": "Montrose MCP",
     "version": "1.0.0",
-    "description": "Carnegie Montrose tools for accounts, holdings, watchlists, and pre-filled trade tickets."
+    "description": "Carnegie Montrose tools for accounts, holdings, credit, transactions, watchlists, and pre-filled trade tickets."
   },
   "tools": [
     {
+      "name": "get_transactions",
+      "title": "Get transactions",
+      "description": "Returns a page of the authenticated user's transactions. Use GetUserAccounts first to discover account IDs, and GetTransactionsCategories to discover valid category types. Pass pagination.nextCursor as cursor to fetch the next page while hasMoreRows is true. For CurrencyExchange rows, code KV is a buy of FX and SV is a sell.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountIds": {
+            "description": "Optional account IDs as UUID/GUID strings. Use GetUserAccounts to find valid IDs. If omitted, transactions are returned for all accessible accounts. IDs the user cannot access are silently ignored; an error is returned only when no ID matches.",
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default": null
+          },
+          "from": {
+            "description": "Inclusive start date as ISO yyyy-MM-dd. If omitted, no lower bound is applied.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "to": {
+            "description": "Inclusive end date as ISO yyyy-MM-dd. If omitted, no upper bound is applied.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "categories": {
+            "description": "Optional category types from GetTransactionsCategories (e.g. Buy, Withdrawal, CurrencyExchange).",
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default": null
+          },
+          "instrumentIds": {
+            "description": "Optional instrument IDs as UUID/GUID strings.",
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default": null
+          },
+          "orderbookIds": {
+            "description": "Optional orderbook IDs.",
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "default": null
+          },
+          "cursor": {
+            "description": "Opaque cursor from a previous page's pagination.nextCursor.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "pageSize": {
+            "description": "Page size (1-200, default 75).",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "default": null
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "accountNumber": {
+                  "type": "integer"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "tradeDate": {
+                  "type": "string"
+                },
+                "settlementDate": {
+                  "type": "string"
+                },
+                "accountDate": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "priceCurrency": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "instrumentId": {
+                  "type": "string"
+                },
+                "orderbookId": {
+                  "type": "integer"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "isCanceled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "accountId",
+                "accountNumber",
+                "category",
+                "code",
+                "tradeDate",
+                "settlementDate",
+                "accountDate",
+                "isCanceled"
+              ]
+            }
+          },
+          "totalAmount": {
+            "description": "Sum of settlement amounts across ALL pages matching the current filter — not the sum of this page's rows, which may also use a different per-row amount fallback.",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "nextCursor": {
+                "type": "string"
+              },
+              "hasMoreRows": {
+                "type": "boolean"
+              },
+              "totalCount": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "hasMoreRows",
+              "totalCount"
+            ]
+          }
+        },
+        "required": [
+          "transactions",
+          "totalAmount",
+          "pagination"
+        ]
+      },
+      "annotations": {
+        "title": "Get transactions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "get_holdings",
       "title": "Get holdings",
-      "description": "Returns holdings for either one account (when accountId is provided) or all accessible accounts. Each account includes currencyPositions: the account's multi-currency cash balances with the amount available for purchase per currency. An empty currencyPositions list means the account holds cash only in its main currency (see the summary). Use GetUserAccounts first to find valid account IDs.",
+      "description": "Returns holdings for either one account (when accountId is provided) or all accessible accounts. Each account includes currencyPositions: the account's multi-currency cash balances with the amount available for purchase per currency. An empty currencyPositions list means the account holds cash only in its main currency (see the summary). Each position includes loanToValue: the instrument collateral factor as a ratio from 0 to 1 (null if unknown). Use GetUserAccounts first to find valid account IDs.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -205,6 +413,12 @@
                           "number",
                           "null"
                         ]
+                      },
+                      "loanToValue": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
                       }
                     },
                     "required": [
@@ -217,7 +431,8 @@
                       "unrealizedResult",
                       "unrealizedResultPercent",
                       "instrumentCurrency",
-                      "fxRate"
+                      "fxRate",
+                      "loanToValue"
                     ]
                   }
                 },
@@ -307,18 +522,27 @@
     {
       "name": "search_instruments",
       "title": "Search instruments",
-      "description": "Searches instruments by ticker or name and returns matching orderbookIds, tickers, and names. Use this tool before CreateTradeTicket when multiple instruments have similar names.",
+      "description": "Searches instruments by ticker, name, or orderbookId and returns matching orderbookIds, tickers, and names. Use this tool before CreateTradeTicket when multiple instruments have similar names.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "query": {
-            "description": "Ticker or instrument name to search for.",
-            "type": "string"
+            "description": "Ticker or instrument name to search for. Required when orderbookId is not provided.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "orderbookId": {
+            "description": "Exact orderbookId to look up.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "default": null
           }
-        },
-        "required": [
-          "query"
-        ]
+        }
       },
       "outputSchema": {
         "type": "object",
@@ -464,6 +688,185 @@
       }
     },
     {
+      "name": "get_credit",
+      "title": "Get credit",
+      "description": "Returns credit information for the authenticated user's single credit account. Each customer has at most one credit account; do not pass an account ID. Includes the full published interest-rate ladder for the user's price plan (every LTV band, not only the current rate). Fields are null when the user has no credit account or the value is unknown. Use GetUserAccounts to find account types and GetHoldings for per-position collateral factors and market values.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "hasCreditAccount": {
+            "type": "boolean"
+          },
+          "accountId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accountNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accountName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "collateral": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "currencyCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "currencyCode"
+            ]
+          },
+          "loanToValueRatio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "creditLimit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "currencyCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "currencyCode"
+            ]
+          },
+          "usedCredit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "currencyCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "currencyCode"
+            ]
+          },
+          "interestRate": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "accruedInterest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "currencyCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "currencyCode"
+            ]
+          },
+          "hasNonPledgedKfAccounts": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "interestLevels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "minLoanToValueRatio": {
+                  "type": "number"
+                },
+                "maxLoanToValueRatio": {
+                  "type": "number"
+                },
+                "interestRate": {
+                  "type": "number"
+                },
+                "isActive": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "minLoanToValueRatio",
+                "maxLoanToValueRatio",
+                "interestRate",
+                "isActive"
+              ]
+            }
+          }
+        },
+        "required": [
+          "hasCreditAccount",
+          "accountId",
+          "accountNumber",
+          "accountName",
+          "error",
+          "collateral",
+          "loanToValueRatio",
+          "creditLimit",
+          "usedCredit",
+          "interestRate",
+          "accruedInterest",
+          "hasNonPledgedKfAccounts",
+          "interestLevels"
+        ]
+      },
+      "annotations": {
+        "title": "Get credit",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "get_watchlists",
       "title": "Get watchlists",
       "description": "Returns the authenticated user's watchlists with their ID, name, and the number of instruments on each list. Use GetWatchlist with a listId to read the instruments on a specific watchlist.",
@@ -503,6 +906,48 @@
       },
       "annotations": {
         "title": "Get watchlists",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_transactions_categories",
+      "title": "Get transaction categories",
+      "description": "Returns the transaction categories that can be used to filter GetTransactions. Each entry has a type (pass this as a categories value) and a short description. Call this before filtering GetTransactions by category.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "description"
+              ]
+            }
+          }
+        },
+        "required": [
+          "result"
+        ]
+      },
+      "annotations": {
+        "title": "Get transaction categories",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -673,7 +1118,7 @@
     {
       "name": "get_user_accounts",
       "title": "Get user accounts",
-      "description": "Returns all user accounts with stable account IDs and display names. Use this tool to discover valid account IDs before calling GetHoldings for a specific account.",
+      "description": "Returns all user accounts with stable account IDs, display names, and account types. Credit (DEPCR) accounts include credit.usedCredit (drawn credit balance), credit.interestRate (current interest rate), and credit.loanToValueRatio (used credit / pledge-group instrument market value). For all other account types credit is null; a credit account may also have credit null when its credit data is unavailable. Use this tool to discover valid account IDs before calling GetHoldings.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -697,13 +1142,40 @@
                 },
                 "accountType": {
                   "type": "string"
+                },
+                "credit": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "usedCredit": {
+                      "type": "number"
+                    },
+                    "currencyCode": {
+                      "type": "string"
+                    },
+                    "interestRate": {
+                      "type": "number"
+                    },
+                    "loanToValueRatio": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "usedCredit",
+                    "currencyCode",
+                    "interestRate",
+                    "loanToValueRatio"
+                  ]
                 }
               },
               "required": [
                 "accountId",
                 "accountNumber",
                 "accountName",
-                "accountType"
+                "accountType",
+                "credit"
               ]
             }
           }
