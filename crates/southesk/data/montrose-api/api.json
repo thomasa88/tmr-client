@@ -9,12 +9,12 @@
     {
       "name": "get_transactions",
       "title": "Get transactions",
-      "description": "Returns a page of the authenticated user's transactions. Use GetUserAccounts first to discover account IDs, and GetTransactionsCategories to discover valid category types. Pass pagination.nextCursor as cursor to fetch the next page while hasMoreRows is true. For CurrencyExchange rows, code KV is a buy of FX and SV is a sell.",
+      "description": "Returns a page of the authenticated user's transactions. Use get_user_accounts first to discover account IDs, and get_transactions_categories to discover valid category types. Pass pagination.nextCursor as cursor to fetch the next page while hasMoreRows is true. For CurrencyExchange rows, code KV is a buy of FX and SV is a sell.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "accountIds": {
-            "description": "Optional account IDs as UUID/GUID strings. Use GetUserAccounts to find valid IDs. If omitted, transactions are returned for all accessible accounts. IDs the user cannot access are silently ignored; an error is returned only when no ID matches.",
+            "description": "Optional account IDs as UUID/GUID strings. Use get_user_accounts to find valid IDs. If omitted, transactions are returned for all accessible accounts. IDs the user cannot access are silently ignored; an error is returned only when no ID matches.",
             "type": [
               "array",
               "null"
@@ -44,7 +44,7 @@
             "default": null
           },
           "categories": {
-            "description": "Optional category types from GetTransactionsCategories (e.g. Buy, Withdrawal, CurrencyExchange).",
+            "description": "Optional category types from get_transactions_categories (e.g. Buy, Withdrawal, CurrencyExchange).",
             "type": [
               "array",
               "null"
@@ -217,12 +217,12 @@
     {
       "name": "get_holdings",
       "title": "Get holdings",
-      "description": "Returns holdings for either one account (when accountId is provided) or all accessible accounts. Each account includes currencyPositions: the account's multi-currency cash balances with the amount available for purchase per currency. An empty currencyPositions list means the account holds cash only in its main currency (see the summary). Each position includes loanToValue: the instrument collateral factor as a ratio from 0 to 1 (null if unknown). Use GetUserAccounts first to find valid account IDs.",
+      "description": "Returns holdings for either one account (when accountId is provided) or all accessible accounts. Each account includes currencyPositions: the account's multi-currency cash balances with the amount available for purchase per currency. An empty currencyPositions list means the account holds cash only in its main currency (see the summary). Each position includes loanToValue: the instrument collateral factor as a ratio from 0 to 1 (null if unknown). Use get_user_accounts first to find valid account IDs.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "accountId": {
-            "description": "Optional account ID as a UUID/GUID string (e.g. \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"). Use GetUserAccounts to find valid account IDs. If omitted, holdings are returned for all accessible accounts.",
+            "description": "Optional account ID as a UUID/GUID string (e.g. \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"). Use get_user_accounts to find valid account IDs. If omitted, holdings are returned for all accessible accounts.",
             "type": [
               "string",
               "null"
@@ -472,16 +472,16 @@
     {
       "name": "add_to_watchlist",
       "title": "Add to watchlist",
-      "description": "Adds one or more instruments to an existing watchlist by orderbookId. Use SearchInstruments to find the correct orderbookId for a ticker or name. Instruments already on the watchlist are silently skipped.",
+      "description": "Adds one or more instruments to an existing watchlist by orderbookId. Use search_instruments to find the correct orderbookId for a ticker or name. Instruments already on the watchlist are silently skipped.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "listId": {
-            "description": "The watchlist ID returned by GetWatchlists.",
+            "description": "The watchlist ID returned by get_watchlists.",
             "type": "integer"
           },
           "orderbookIds": {
-            "description": "OrderbookIds (int) of the instruments to add. Use SearchInstruments to find the correct orderbookId.",
+            "description": "OrderbookIds (int) of the instruments to add. Use search_instruments to find the correct orderbookId.",
             "type": "array",
             "items": {
               "type": "integer"
@@ -522,7 +522,7 @@
     {
       "name": "search_instruments",
       "title": "Search instruments",
-      "description": "Searches instruments by ticker, name, or orderbookId and returns matching orderbookIds, tickers, and names. Use this tool before CreateTradeTicket when multiple instruments have similar names.",
+      "description": "Searches instruments by ticker, name, or orderbookId and returns matching orderbookIds, tickers, and names. Use this tool before create_trade_ticket when multiple instruments have similar names.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -585,7 +585,7 @@
     {
       "name": "create_trade_ticket",
       "title": "Create trade ticket",
-      "description": "Creates a pre-filled trade ticket URL for the Montrose app. Specify side (Buy/Sell), quantity or amount, and an instrument identifier. Use orderbookId directly when known, since it is the safest identifier. If you only know a ticker or name and it may be ambiguous, call SearchInstruments first to find the correct orderbookId, then call CreateTradeTicket. Returns a URL that opens the trade ticket in the Montrose app with the order details pre-filled.",
+      "description": "Creates a pre-filled trade ticket URL for the Montrose app. Specify side (Buy/Sell), quantity or amount, and an instrument identifier. Use orderbookId directly when known, since it is the safest identifier. If you only know a ticker or name and it may be ambiguous, call search_instruments first to find the correct orderbookId, then call create_trade_ticket. Returns a URL that opens the trade ticket in the Montrose app with the order details pre-filled.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -599,7 +599,7 @@
             ]
           },
           "orderbookId": {
-            "description": "Optional orderbookId (int) to identify the instrument directly. This is the safest identifier and should be preferred when known or after using SearchInstruments.",
+            "description": "Optional orderbookId (int) to identify the instrument directly. This is the safest identifier and should be preferred when known or after using search_instruments.",
             "type": [
               "integer",
               "null"
@@ -607,7 +607,7 @@
             "default": null
           },
           "ticker": {
-            "description": "Optional ticker (string) to identify the instrument by ticker symbol, e.g. \"VOLV B\". This is a convenience identifier and may be ambiguous; use SearchInstruments to find the correct orderbookId when needed.",
+            "description": "Optional ticker (string) to identify the instrument by ticker symbol, e.g. \"VOLV B\". This is a convenience identifier and may be ambiguous; use search_instruments to find the correct orderbookId when needed.",
             "type": [
               "string",
               "null"
@@ -615,7 +615,7 @@
             "default": null
           },
           "name": {
-            "description": "Optional instrument name (string) to search for the instrument. This is a convenience identifier and may be ambiguous; use SearchInstruments to find the correct orderbookId when needed.",
+            "description": "Optional instrument name (string) to search for the instrument. This is a convenience identifier and may be ambiguous; use search_instruments to find the correct orderbookId when needed.",
             "type": [
               "string",
               "null"
@@ -647,7 +647,7 @@
             "default": null
           },
           "accountId": {
-            "description": "Optional account ID as a UUID/GUID string (e.g. \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"). Use GetUserAccounts to find valid account IDs.",
+            "description": "Optional account ID as a UUID/GUID string (e.g. \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"). Use get_user_accounts to find valid account IDs.",
             "type": [
               "string",
               "null"
@@ -690,7 +690,7 @@
     {
       "name": "get_credit",
       "title": "Get credit",
-      "description": "Returns credit information for the authenticated user's single credit account. Each customer has at most one credit account; do not pass an account ID. Includes the full published interest-rate ladder for the user's price plan (every LTV band, not only the current rate). Fields are null when the user has no credit account or the value is unknown. Use GetUserAccounts to find account types and GetHoldings for per-position collateral factors and market values.",
+      "description": "Returns credit information for the authenticated user's single credit account. Each customer has at most one credit account; do not pass an account ID. Includes the full published interest-rate ladder for the user's price plan (every LTV band, not only the current rate). Fields are null when the user has no credit account or the value is unknown. Use get_user_accounts to find account types and get_holdings for per-position collateral factors and market values.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -869,7 +869,7 @@
     {
       "name": "get_watchlists",
       "title": "Get watchlists",
-      "description": "Returns the authenticated user's watchlists with their ID, name, and the number of instruments on each list. Use GetWatchlist with a listId to read the instruments on a specific watchlist.",
+      "description": "Returns the authenticated user's watchlists with their ID, name, and the number of instruments on each list. Use get_watchlist with a listId to read the instruments on a specific watchlist.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -915,7 +915,7 @@
     {
       "name": "get_transactions_categories",
       "title": "Get transaction categories",
-      "description": "Returns the transaction categories that can be used to filter GetTransactions. Each entry has a type (pass this as a categories value) and a short description. Call this before filtering GetTransactions by category.",
+      "description": "Returns the transaction categories that can be used to filter get_transactions. Each entry has a type (pass this as a categories value) and a short description. Call this before filtering get_transactions by category.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -1000,12 +1000,12 @@
     {
       "name": "get_watchlist",
       "title": "Get watchlist",
-      "description": "Returns the instruments on a single watchlist, identified by listId. Each instrument is enriched with its orderbookId, ticker and name. Use GetWatchlists first to discover valid listIds.",
+      "description": "Returns the instruments on a single watchlist, identified by listId. Each instrument is enriched with its orderbookId, ticker and name. Use get_watchlists first to discover valid listIds.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "listId": {
-            "description": "The watchlist ID returned by GetWatchlists.",
+            "description": "The watchlist ID returned by get_watchlists.",
             "type": "integer"
           }
         },
@@ -1073,7 +1073,7 @@
         "type": "object",
         "properties": {
           "listId": {
-            "description": "The watchlist ID returned by GetWatchlists.",
+            "description": "The watchlist ID returned by get_watchlists.",
             "type": "integer"
           },
           "orderbookIds": {
@@ -1118,7 +1118,7 @@
     {
       "name": "get_user_accounts",
       "title": "Get user accounts",
-      "description": "Returns all user accounts with stable account IDs, display names, and account types. Credit (DEPCR) accounts include credit.usedCredit (drawn credit balance), credit.interestRate (current interest rate), and credit.loanToValueRatio (used credit / pledge-group instrument market value). For all other account types credit is null; a credit account may also have credit null when its credit data is unavailable. Use this tool to discover valid account IDs before calling GetHoldings.",
+      "description": "Returns all user accounts with stable account IDs, display names, and account types. Credit (DEPCR) accounts include credit.usedCredit (drawn credit balance), credit.interestRate (current interest rate), and credit.loanToValueRatio (used credit / pledge-group instrument market value). For all other account types credit is null; a credit account may also have credit null when its credit data is unavailable. Use this tool to discover valid account IDs before calling get_holdings.",
       "inputSchema": {
         "type": "object",
         "properties": {}
