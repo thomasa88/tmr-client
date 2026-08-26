@@ -9,7 +9,7 @@
     {
       "name": "get_transactions",
       "title": "Get transactions",
-      "description": "Returns a page of the authenticated user's transactions. Use get_user_accounts first to discover account IDs, and get_transactions_categories to discover valid category types. Pass pagination.nextCursor as cursor to fetch the next page while hasMoreRows is true. For CurrencyExchange rows, code KV is a buy of FX and SV is a sell.",
+      "description": "Returns a page of the authenticated user's transactions. Use get_user_accounts first to discover account IDs, and get_transactions_categories to discover valid category types. Pass pagination.nextCursor as cursor to fetch the next page while nextCursor is present. For CurrencyExchange rows, code KV is a buy of FX and SV is a sell.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -91,7 +91,7 @@
             "default": null
           },
           "pageSize": {
-            "description": "Page size (1-200, default 75).",
+            "description": "Page size (1-50, default 50).",
             "type": [
               "integer",
               "null"
@@ -99,112 +99,6 @@
             "default": null
           }
         }
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "transactions": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "integer"
-                },
-                "accountId": {
-                  "type": "string"
-                },
-                "accountNumber": {
-                  "type": "integer"
-                },
-                "category": {
-                  "type": "string"
-                },
-                "code": {
-                  "type": "string"
-                },
-                "tradeDate": {
-                  "type": "string"
-                },
-                "settlementDate": {
-                  "type": "string"
-                },
-                "accountDate": {
-                  "type": "string"
-                },
-                "quantity": {
-                  "type": "number"
-                },
-                "price": {
-                  "type": "number"
-                },
-                "priceCurrency": {
-                  "type": "string"
-                },
-                "amount": {
-                  "type": "number"
-                },
-                "currency": {
-                  "type": "string"
-                },
-                "instrumentId": {
-                  "type": "string"
-                },
-                "orderbookId": {
-                  "type": "integer"
-                },
-                "text": {
-                  "type": "string"
-                },
-                "isCanceled": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "id",
-                "accountId",
-                "accountNumber",
-                "category",
-                "code",
-                "tradeDate",
-                "settlementDate",
-                "accountDate",
-                "isCanceled"
-              ]
-            }
-          },
-          "totalAmount": {
-            "description": "Sum of settlement amounts across ALL pages matching the current filter — not the sum of this page's rows, which may also use a different per-row amount fallback.",
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "pagination": {
-            "type": "object",
-            "properties": {
-              "nextCursor": {
-                "type": "string"
-              },
-              "hasMoreRows": {
-                "type": "boolean"
-              },
-              "totalCount": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "nextCursor",
-              "hasMoreRows",
-              "totalCount"
-            ]
-          }
-        },
-        "required": [
-          "transactions",
-          "totalAmount",
-          "pagination"
-        ]
       },
       "annotations": {
         "title": "Get transactions",
@@ -231,235 +125,6 @@
             "default": null
           }
         }
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "accountId": {
-                  "type": "string"
-                },
-                "accountNumber": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "accountName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "accountType": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "currency": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "summary": {
-                  "type": [
-                    "object",
-                    "null"
-                  ],
-                  "properties": {
-                    "totalMarketValue": {
-                      "type": "number"
-                    },
-                    "availableForPurchase": {
-                      "type": "number"
-                    },
-                    "totalValue": {
-                      "type": "number"
-                    },
-                    "currency": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "totalMarketValue",
-                    "availableForPurchase",
-                    "totalValue",
-                    "currency"
-                  ]
-                },
-                "currencyPositions": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "currencyCode": {
-                        "type": "string"
-                      },
-                      "balance": {
-                        "type": "number"
-                      },
-                      "accruedInterest": {
-                        "type": "number"
-                      },
-                      "availableForPurchase": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "currencyCode",
-                      "balance",
-                      "accruedInterest",
-                      "availableForPurchase"
-                    ]
-                  }
-                },
-                "positions": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "instrumentName": {
-                        "type": "string"
-                      },
-                      "ticker": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "orderbookId": {
-                        "type": [
-                          "integer",
-                          "null"
-                        ]
-                      },
-                      "possibleOrderbookIds": {
-                        "type": [
-                          "array",
-                          "null"
-                        ],
-                        "items": {
-                          "type": "integer"
-                        }
-                      },
-                      "quantity": {
-                        "type": "number"
-                      },
-                      "marketValue": {
-                        "type": [
-                          "object",
-                          "null"
-                        ],
-                        "properties": {
-                          "accountCurrency": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
-                          },
-                          "instrumentCurrency": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "accountCurrency",
-                          "instrumentCurrency"
-                        ]
-                      },
-                      "unrealizedResult": {
-                        "type": [
-                          "object",
-                          "null"
-                        ],
-                        "properties": {
-                          "accountCurrency": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
-                          },
-                          "instrumentCurrency": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "accountCurrency",
-                          "instrumentCurrency"
-                        ]
-                      },
-                      "unrealizedResultPercent": {
-                        "type": [
-                          "number",
-                          "null"
-                        ]
-                      },
-                      "instrumentCurrency": {
-                        "type": "string"
-                      },
-                      "fxRate": {
-                        "type": [
-                          "number",
-                          "null"
-                        ]
-                      },
-                      "loanToValue": {
-                        "type": [
-                          "number",
-                          "null"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "instrumentName",
-                      "ticker",
-                      "orderbookId",
-                      "possibleOrderbookIds",
-                      "quantity",
-                      "marketValue",
-                      "unrealizedResult",
-                      "unrealizedResultPercent",
-                      "instrumentCurrency",
-                      "fxRate",
-                      "loanToValue"
-                    ]
-                  }
-                },
-                "error": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "accountId",
-                "accountNumber",
-                "accountName",
-                "accountType",
-                "currency",
-                "summary",
-                "currencyPositions",
-                "positions",
-                "error"
-              ]
-            }
-          }
-        },
-        "required": [
-          "result"
-        ]
       },
       "annotations": {
         "title": "Get holdings",
@@ -684,6 +349,151 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "delete_price_alert",
+      "title": "Delete price alert",
+      "description": "Deletes a price alert (Swedish: \"kurslarm\") by its id, as returned by create_price_alert or get_price_alerts. Use get_price_alerts or get_price_alerts_for_orderbook first to find the id of the alert to delete.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The id of the price alert to delete, as returned by create_price_alert, get_price_alerts, or get_price_alerts_for_orderbook.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "alertId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "alertId"
+        ]
+      },
+      "annotations": {
+        "title": "Delete price alert",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_price_alerts",
+      "title": "Get price alerts",
+      "description": "Returns all price alerts (Swedish: \"kurslarm\") for the authenticated user across all instruments. Each alert includes the instrument ticker and name, trigger price(s), direction, status, and expiry. Use get_price_alerts_for_orderbook to filter by a specific instrument.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "orderbookId": {
+                  "type": "integer"
+                },
+                "ticker": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "instrumentName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "direction": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "alertType": {
+                  "type": "string"
+                },
+                "priceUp": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "priceDown": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "percentage": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "isRepeating": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "validUntil": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "orderbookId",
+                "ticker",
+                "instrumentName",
+                "direction",
+                "status",
+                "alertType",
+                "priceUp",
+                "priceDown",
+                "percentage",
+                "isRepeating",
+                "validUntil",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "result"
+        ]
+      },
+      "annotations": {
+        "title": "Get price alerts",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     },
@@ -998,6 +808,91 @@
       }
     },
     {
+      "name": "create_price_alert",
+      "title": "Create price alert",
+      "description": "Creates a new price alert (Swedish: \"kurslarm\") for an instrument. Three alert types are supported:\n- \"price\": triggers when the price crosses a fixed threshold. Requires \"price\". \"direction\" is optional here: if omitted, it's inferred by comparing \"price\" to the instrument's last known price (which may be delayed up to ~15 minutes).\n- \"percentage\": triggers when the price moves by a given percentage from a reference price. Requires \"price\" (the reference price) and \"percentage\". Optionally \"repeating\" to re-trigger at each new level. \"direction\" is optional and defaults to \"both\" (trigger on a move in either direction) when omitted.\n- \"trailing\": triggers when the price drops X% from its peak (direction \"below\") or rises X% from its trough (direction \"above\"), measured from a reference price. Requires \"price\" (the reference price), \"percentage\", and an explicit \"direction\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "orderbookId": {
+            "description": "The orderbookId of the instrument. Use search_instruments to find it.",
+            "type": "integer"
+          },
+          "alertType": {
+            "description": "Alert type: \"price\", \"percentage\", or \"trailing\".",
+            "type": "string"
+          },
+          "direction": {
+            "description": "Trigger direction: \"above\" (alert when price goes above threshold), \"below\" (alert when price goes below threshold), or \"both\" (only valid when alertType is \"percentage\"). Optional for alertType \"price\" (inferred from the instrument's last known price) and \"percentage\" (defaults to \"both\"). Required for alertType \"trailing\". Set this explicitly to override the inferred/default direction.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "validUntil": {
+            "description": "Expiry date in YYYY-MM-DD format. The alert will no longer trigger after this date. Optional; defaults to one year from today when omitted.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "price": {
+            "description": "Reference/threshold price, required for all alert types. For alertType \"price\" this is the fixed trigger threshold. For alertType \"percentage\" and \"trailing\" this is the reference price the percentage move is measured from (trigger levels are computed as this price × (1 ± percentage/100)). For direction \"above\" this is the reference for the upper trigger; for \"below\" the lower; for \"both\" it is used for both.",
+            "type": [
+              "number",
+              "null"
+            ],
+            "default": null
+          },
+          "percentage": {
+            "description": "Percentage change threshold, e.g. 5.0 for 5% (must be greater than 0 and less than 100). Required for alertType \"percentage\" and \"trailing\".",
+            "type": [
+              "number",
+              "null"
+            ],
+            "default": null
+          },
+          "repeating": {
+            "description": "Whether the percentage alert should re-trigger at each new price level. Only applies to alertType \"percentage\".",
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "default": null
+          },
+          "preAndPostMarket": {
+            "description": "Whether to include pre-market and post-market prices when evaluating the alert. Defaults to false.",
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "orderbookId",
+          "alertType"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "alertId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "alertId"
+        ]
+      },
+      "annotations": {
+        "title": "Create price alert",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "get_watchlist",
       "title": "Get watchlist",
       "description": "Returns the instruments on a single watchlist, identified by listId. Each instrument is enriched with its orderbookId, ticker and name. Use get_watchlists first to discover valid listIds.",
@@ -1059,6 +954,124 @@
       },
       "annotations": {
         "title": "Get watchlist",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_price_alerts_for_orderbook",
+      "title": "Get price alerts for orderbook",
+      "description": "Returns price alerts (Swedish: \"kurslarm\") for a specific instrument, identified by orderbookId. Use search_instruments to find the correct orderbookId for a ticker or name. Use get_price_alerts to list all alerts regardless of instrument.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "orderbookId": {
+            "description": "The orderbookId of the instrument. Use search_instruments to find it.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "orderbookId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "orderbookId": {
+                  "type": "integer"
+                },
+                "ticker": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "instrumentName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "direction": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "alertType": {
+                  "type": "string"
+                },
+                "priceUp": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "priceDown": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "percentage": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "isRepeating": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "validUntil": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "orderbookId",
+                "ticker",
+                "instrumentName",
+                "direction",
+                "status",
+                "alertType",
+                "priceUp",
+                "priceDown",
+                "percentage",
+                "isRepeating",
+                "validUntil",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "result"
+        ]
+      },
+      "annotations": {
+        "title": "Get price alerts for orderbook",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -1193,6 +1206,12 @@
       }
     }
   ],
-  "prompts": null,
+  "prompts": [
+    {
+      "name": "credit_guide",
+      "description": "Domain guide for credit, collateral, interest tiers, and KF (kapitalforsakring) pledging. Use this prompt when the user asks about their credit account, loan-to-value ratio, interest rates, collateral, or pledging strategy.",
+      "arguments": []
+    }
+  ],
   "resources": null
 }
