@@ -253,12 +253,13 @@ impl Client<Disconnected> {
         let auth_handler::AuthGrant {
             code: auth_code,
             state: csrf_token,
+            iss: issuer,
         } = auth_handler.authenticate(&auth_url).await?;
         info!("Received authorization code: {}", auth_code);
 
         info!("Exchanging authorization code for access token...");
         oauth_state
-            .handle_callback(&auth_code, &csrf_token)
+            .handle_callback_with_issuer(&auth_code, &csrf_token, Some(&issuer))
             .await
             .to_connect_auth_err("failed to handle authorization callback")?;
 

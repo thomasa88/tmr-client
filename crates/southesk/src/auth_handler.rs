@@ -78,6 +78,9 @@ pub struct AuthGrant {
     pub code: String,
     /// CSRF token sent by the client and now returned by the server
     pub state: String,
+    /// The issuer of the authorization server, returned by the server in the
+    /// callback URL.
+    pub iss: String,
 }
 
 /// An OAuth callback handler that opens the user's web browser and listens for

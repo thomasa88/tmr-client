@@ -28,6 +28,10 @@ Headers:
 
 - `Currency` helper functions to create common currencies.
 
+### Fixed
+
+- Handle issuer (`iss`) field in OAuth callback.
+
 ## [0.0.9] - 2026-07-19
 
 ### Added
