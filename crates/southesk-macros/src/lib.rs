@@ -131,7 +131,7 @@ fn tokenize_tool(tool: &Tool, client_impl: &mut TokenStream, support_types: &mut
     while return_obj.properties.len() == 1 {
         let (name, obj) = return_obj.properties.iter().next().unwrap();
         return_obj = obj;
-        let var_name = Ident::new(&camel_to_snake_case(name), Span::call_site());
+        let var_name = Ident::new_raw(&camel_to_snake_case(name), Span::call_site());
         return_member.extend(quote! { . #var_name });
         return_type_name += &camel_to_pascal_case(name);
     }
@@ -161,7 +161,7 @@ fn tokenize_tool(tool: &Tool, client_impl: &mut TokenStream, support_types: &mut
     } else {
         (quote! { pub }, &func_name)
     };
-    let long_func_name_ident = Ident::new(long_func_name, Span::call_site());
+    let long_func_name_ident = Ident::new_raw(long_func_name, Span::call_site());
 
     // serde derive macros do not duplicate allow(unused_lifetimes) on all
     // generated structs, neither when putting it on the struct nor the mod, so
@@ -196,7 +196,7 @@ fn tokenize_tool(tool: &Tool, client_impl: &mut TokenStream, support_types: &mut
     });
 
     if provide_short_func {
-        let short_func_name_ident = Ident::new(&func_name, Span::call_site());
+        let short_func_name_ident = Ident::new_raw(&func_name, Span::call_site());
         let mut arg_mappings = TokenStream::new();
         let mut short_func_args = TokenStream::new();
         let mut short_func_comment = func_comment.clone();
@@ -204,7 +204,7 @@ fn tokenize_tool(tool: &Tool, client_impl: &mut TokenStream, support_types: &mut
 
         for (prop_name, prop_js_type) in &input_schema.properties {
             let arg_name = camel_to_snake_case(prop_name);
-            let prop_ident = Ident::new(&arg_name, Span::call_site());
+            let prop_ident = Ident::new_raw(&arg_name, Span::call_site());
             let (mut prop_type_quote, _has_ref, _is_nullable) = process_type(
                 None,
                 &format!("{}{}", args_struct_name, camel_to_pascal_case(prop_name)),
@@ -273,9 +273,9 @@ fn process_type(
     let has_ref_valid = support_types.is_some();
 
     let is_nullable = js_type.r#type.1;
-    let ident = match js_type.r#type.0.as_ref() {
+    let type_ident = match js_type.r#type.0.as_ref() {
         "object" => {
-            let struct_ident = Ident::new(type_name_hint, Span::call_site());
+            let struct_ident = Ident::new_raw(type_name_hint, Span::call_site());
             if let Some(support_types) = support_types {
                 let mut struct_members = TokenStream::new();
                 js_type
@@ -283,7 +283,7 @@ fn process_type(
                     .iter()
                     .for_each(|(prop_name, prop_js_type)| {
                         let member_ident =
-                            Ident::new(&camel_to_snake_case(prop_name), Span::call_site());
+                            Ident::new_raw(&camel_to_snake_case(prop_name), Span::call_site());
                         let (mut member_type, member_has_ref, member_is_nullable) = process_type(
                             Some(support_types),
                             &format!("{}{}", type_name_hint, camel_to_pascal_case(prop_name)),
@@ -369,11 +369,11 @@ fn process_type(
         }
         "string" => {
             if let Some(enum_values) = &js_type.r#enum {
-                let enum_ident = Ident::new(type_name_hint, Span::call_site());
+                let enum_ident = Ident::new_raw(type_name_hint, Span::call_site());
                 if let Some(support_types) = support_types {
                     let mut enum_members = TokenStream::new();
                     for enum_value in enum_values {
-                        let enum_value_ident = Ident::new(enum_value, Span::call_site());
+                        let enum_value_ident = Ident::new_raw(enum_value, Span::call_site());
                         enum_members.extend(quote! {
                             #enum_value_ident,
                         });
@@ -408,7 +408,7 @@ fn process_type(
         _ => panic!("Unsupported type \"{:?}\"", js_type.r#type),
     };
     (
-        ident,
+        type_ident,
         if has_ref_valid { Some(has_ref) } else { None },
         is_nullable,
     )

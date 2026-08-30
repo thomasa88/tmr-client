@@ -31,6 +31,8 @@ Headers:
 ### Fixed
 
 - Handle issuer (`iss`) field in OAuth callback.
+- Escape names and ignore tools without output schema when generating low level
+  APIs from Montrose APIs.
 
 ## [0.0.9] - 2026-07-19
 

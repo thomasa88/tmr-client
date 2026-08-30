@@ -78,6 +78,33 @@
           "output"
         ]
       }
+    },
+    {
+      "name": "reserved_keyword_tool",
+      "description": "A tool with reserved keywords.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "let": {
+            "description": "The input string.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "let"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "fn": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "fn"
+        ]
+      }
     }
   ]
 }
