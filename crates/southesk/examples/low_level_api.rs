@@ -3,7 +3,6 @@
 
 //! Demonstrates how to call the low-level MCP API directly.
 
-use anyhow::Context;
 use rust_decimal::dec;
 use southesk::low_level::types::{CreateTradeTicketArgs, CreateTradeTicketArgsSide};
 
@@ -22,22 +21,13 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     let montrose = montrose.connect().await?;
 
-    let account = &montrose.low_get_user_accounts().await?[0];
-    let holdings: Vec<_> = montrose
-        .low_get_holdings(Some(&account.account_id.clone()))
-        .await?
-        .into_iter()
-        .filter(|h| h.account_type.as_deref() == Some("ISK"))
-        .collect();
+    let accounts = &montrose.low_get_user_accounts().await?;
+    dbg!(accounts);
 
     montrose
         .low_create_trade_ticket(CreateTradeTicketArgs {
             side: CreateTradeTicketArgsSide::Buy,
-            orderbook_id: holdings
-                .first()
-                .and_then(|h| h.positions.first())
-                .context("No existing position in first account")?
-                .orderbook_id,
+            orderbook_id: Some(3361),
             ticker: None,
             name: None,
             quantity: Some(dec!(1.0)),
