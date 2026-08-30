@@ -18,7 +18,8 @@ struct Tool {
     name: String,
     description: String,
     input_schema: JsType,
-    output_schema: JsType,
+    // Output schema is not specified for all tools
+    output_schema: Option<JsType>,
 }
 
 /// A representation of the JSON schema
@@ -82,13 +83,17 @@ enum HasRef {
     No,
 }
 
+/// Converts the given tool to tokens and writes the result to client_impl and support_types.
 fn tokenize_tool(tool: &Tool, client_impl: &mut TokenStream, support_types: &mut TokenStream) {
     let Tool {
         name: tool_name,
         description,
         input_schema,
-        output_schema,
-    } = tool;
+        output_schema: Some(output_schema),
+    } = tool else {
+        // Output schema must be specified for code generation to work.
+        return;
+    };
 
     let provide_short_func = input_schema.properties.len() <= 4;
     let args_struct_name = snake_to_pascal_case(tool_name) + "Args";
